@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GirlPower Learn - Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #E91E63;
+            --secondary: #9C27B0;
+            --accent: #00BCD4;
+            --light-pink: #FCE4EC;
+            --light-purple: #F3E5F5;
+            --light-teal: #E0F7FA;
+            --text-dark: #2C3E50;
+            --text-light: #7F8C8D;
+            --white: #FFFFFF;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #FCE4EC 0%, #F3E5F5 50%, #E0F7FA 100%);
+            min-height: 100vh;
+            color: var(--text-dark);
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            padding: 1rem 2rem;
+            box-shadow: var(--shadow-lg);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo {
+            width: 50px;
+            height: 50px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            box-shadow: var(--shadow);
+        }
+
+        .brand-name {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        /* Navigation */
+        .nav {
+            background: white;
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 82px;
+            z-index: 99;
+        }
+
+        .nav-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 1rem;
+            list-style: none;
+            overflow-x: auto;
+        }
+
+        .nav-tabs::-webkit-scrollbar {
+            height: 3px;
+        }
+
+        .nav-tabs::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 10px;
+        }
+
+        .nav-tab {
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+            white-space: nowrap;
+            font-weight: 500;
+        }
+
+        .nav-tab:hover {
+            background: var(--light-pink);
+            color: var(--primary);
+        }
+
+        .nav-tab.active {
+            border-bottom-color: var(--primary);
+            color: var(--primary);
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Welcome Section */
+        .welcome {
+            background: linear-gradient(135deg, rgba(233, 30, 99, 0.1) 0%, rgba(156, 39, 176, 0.1) 100%);
+            padding: 2rem;
+            border-radius: 20px;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow);
+        }
+
+        .welcome h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            color: var(--secondary);
+        }
+
+        .welcome p {
+            color: var(--text-light);
+            font-size: 1.1rem;
+        }
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Featured Section */
+        .featured {
+            margin-bottom: 3rem;
+        }
+
+        .section-title {
+            font-size: 1.8rem;
+            margin-bottom: 1.5rem;
+            color: var(--secondary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .featured-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .card-image {
+            width: 100%;
+            height: 180px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: white;
+        }
+
+        .card-content {
+            padding: 1.5rem;
+        }
+
+        .card-tag {
+            display: inline-block;
+            padding: 0.3rem 0.8rem;
+            background: var(--light-pink);
+            color: var(--primary);
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .card-title {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-dark);
+        }
+
+        .card-description {
+            color: var(--text-light);
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        /* Progress Section */
+        .progress-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+        }
+
+        .progress-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .stat {
+            text-align: center;
+            padding: 1rem;
+            background: linear-gradient(135deg, var(--light-pink) 0%, var(--light-purple) 100%);
+            border-radius: 10px;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            color: var(--text-light);
+            margin-top: 0.5rem;
+        }
+
+        /* Content Grid */
+        .content-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        /* Video Card */
+        .video-card {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        .video-thumbnail {
+            width: 100%;
+            height: 180px;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--secondary) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .play-button {
+            width: 60px;
+            height: 60px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: var(--primary);
+        }
+
+        /* Course Card */
+        .course-card {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+        }
+
+        .course-progress {
+            margin-top: 1rem;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--light-pink);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
+            transition: width 0.3s;
+        }
+
+        .lessons-list {
+            list-style: none;
+            margin-top: 1rem;
+        }
+
+        .lesson-item {
+            padding: 0.8rem;
+            margin-bottom: 0.5rem;
+            background: var(--light-purple);
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .lesson-item:hover {
+            background: var(--light-pink);
+            transform: translateX(5px);
+        }
+
+        .lesson-status {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--primary);
+            border-radius: 50%;
+        }
+
+        .lesson-status.completed {
+            background: var(--primary);
+            position: relative;
+        }
+
+        .lesson-status.completed::after {
+            content: '✓';
+            color: white;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 0.7rem;
+        }
+
+        /* Profile Section */
+        .profile-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .profile-avatar {
+            width: 100px;
+            height: 100px;
+            background: white;
+            border-radius: 50%;
+            margin: 0 auto 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header-content {
+                padding: 0;
+            }
+
+            .brand-name {
+                font-size: 1.2rem;
+            }
+
+            .logo {
+                width: 40px;
+                height: 40px;
+                font-size: 1.2rem;
+            }
+
+            .container {
+                padding: 1rem;
+            }
+
+            .welcome {
+                padding: 1.5rem;
+            }
+
+            .welcome h1 {
+                font-size: 1.5rem;
+            }
+
+            .welcome p {
+                font-size: 0.95rem;
+            }
+
+            .section-title {
+                font-size: 1.4rem;
+            }
+
+            .featured-grid,
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .nav {
+                top: 72px;
+            }
+
+            .nav-content {
+                padding: 0 1rem;
+            }
+
+            .nav-tab {
+                padding: 0.8rem 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo-section">
+                <div class="logo">💜</div>
+                <span class="brand-name">MGI Digital Learning Hub</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-content">
+            <ul class="nav-tabs">
+                <li class="nav-tab active" data-tab="home">🏠 Home</li>
+                <li class="nav-tab" data-tab="books">📚 Books</li>
+                <li class="nav-tab" data-tab="videos">🎥 Videos</li>
+                <li class="nav-tab" data-tab="courses">🎓 Courses</li>
+                <li class="nav-tab" data-tab="profile">👤 Profile</li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Home Tab -->
+        <div class="tab-content active" id="home">
+            <!-- Welcome Section -->
+            <div class="welcome">
+                <h1>Welcome back, MaryWhite! ✨</h1>
+                <p>Empowering girls through knowledge & skills</p>
+            </div>
+
+            <!-- Progress Section -->
+            <div class="progress-card">
+                <h2 class="section-title">📊 Your Progress</h2>
+                <div class="progress-stats">
+                    <div class="stat">
+                        <div class="stat-number">12</div>
+                        <div class="stat-label">Courses Completed</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number">45</div>
+                        <div class="stat-label">Lessons Finished</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number">8</div>
+                        <div class="stat-label">Books Read</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Featured Section -->
+            <section class="featured">
+                <h2 class="section-title">⭐ Featured This Week</h2>
+                <div class="featured-grid">
+                    <div class="card">
+                        <div class="card-image">
+                            <img src="https://i.ytimg.com/vi/6rsCyACgYTM/hq720.jpg?sqp=-oaymwEhCK4FEIIDSFryq4qpAxMIARUAAAAAGAElAADIQj0AgKJD&rs=AOn4CLB1LuajdRw06Jb524JMmPJ5zjq20A" 
+                                 alt="Digital Literacy Basics" 
+                                 style="width: 100%; height: 100%; object-fit: cover;">
+                        </div>
+                        <div class="card-content">
+                            <span class="card-tag">TRENDING COURSE</span>
+                            <h3 class="card-title">Digital Literacy Basics</h3>
+                            <p class="card-description">Master essential digital skills for the modern world. Learn internet safety, document creation, and more.</p>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-image">
+                            <img src="https://codeop.tech/wp-content/uploads/2025/02/A-Beginners-Guide-Best-Practices.jpg"
+                                 alt="A Beginners Guide"
+                                 style="width: 100%; height: 100%; object-fit: cover;">
+                        </div>
+                        <div class="card-content">
+                            <span class="card-tag">POPULAR VIDEO</span>
+                            <h3 class="card-title">Coding for Beginners</h3>
+                            <p class="card-description">Start your programming journey with fun, easy-to-follow tutorials designed just for you.</p>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-image">
+                            <img src="https://i.ytimg.com/vi/1BmMUpx0I9c/maxresdefault.jpg"
+                                 alt="Women in STEM"
+                                 style="width: 100%; height: 100%; object-fit: cover;">
+                        </div>
+                        <div class="card-content">
+                            <span class="card-tag">FEATURED BOOK</span>
+                            <h3 class="card-title">Women in STEM</h3>
+                            <p class="card-description">Inspiring stories of women who changed the world through science and technology.</p>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+        </div>
+
+        <!-- Books Tab -->
+        <div class="tab-content" id="books">
+            <h2 class="section-title">📚 Book Library</h2>
+            <div class="content-grid">
+                <div class="card">
+                    <div class="card-image">
+                        <img src="https://www.learncomputerscienceonline.com/wp-content/uploads/2022/07/Introduction-To-Computer-Science-Beginners-Guide-To-Computer-Science-CS-CS-Major-Computer-Science.jpg" 
+                             alt="Introduction to Computer Science" 
+                             style="width: 100%; height: 100%; object-fit: cover;">
+                    </div>
+                    <div class="card-content">
+                        <h3 class="card-title">Introduction to Computer Science</h3>
+                        <p class="card-description">Learn the fundamentals of computing and programming.</p>
+                    </div>
+                </div>
+
+
+                <div class="card">
+                    <div class="card-image">
+                        <img src="https://storage.googleapis.com/msgsndr/3vS9SHc3xwilMUcXtkPR/media/664f5f1b04581fa16003ce5a.jpeg"
+                        alt="Leadership and Confidence"
+                        style="width: 100%; height: 100%; object-fit: cover;">
+                    </div>
+                    <div class="card-content">
+                        <h3 class="card-title">Leadership & Confidence</h3>
+                        <p class="card-description">Develop leadership skills and build self-confidence.</p>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-image">📙</div>
+                    <div class="card-content">
+                        <h3 class="card-title">Creative Writing Guide</h3>
+                        <p class="card-description">Express yourself through the power of writing.</p>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-image">
+                        <img src="https://www.clickvieweducation.com/_next/image?url=https%3A%2F%2Fcms.clickvieweducation.com%2Fwp-content%2Fuploads%2F2025%2F03%2FInternational-Day-of-Mathematics-Activities.png&w=3840&q=100"
+                        alt="Mathematics Made Easy"
+                        style="width: 100%; height: 100%; object-fit: cover;">
+                    </div>
+                    <div class="card-content">
+                        <h3 class="card-title">Mathematics Made Easy</h3>
+                        <p class="card-description">Build confidence with step-by-step math tutorials.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Videos Tab -->
+        <div class="tab-content" id="videos">
+            <h2 class="section-title">🎥 Video Library</h2>
+            <div class="content-grid">
+                <div class="video-card">
+                    <div class="video-thumbnail">
+                        <div class="play-button">▶</div>
+                    </div>
+                    <div class="card-content">
+                        <h3 class="card-title">HTML & CSS Basics</h3>
+                        <p class="card-description">Build your first website from scratch.</p>
+                    </div>
+                </div>
+                <div class="video-card">
+                    <div class="video-thumbnail">
+                        <div class="play-button">▶</div>
+                    </div>
+                    <div class="card-content">
+                        <h3 class="card-title">Public Speaking Skills</h3>
+                        <p class="card-description">Overcome stage fright and speak with confidence.</p>
+                    </div>
+                </div>
+                <div class="video-card">
+                    <div class="video-thumbnail">
+                        <div class="play-button">▶</div>
+                    </div>
+                    <div class="card-content">
+                        <h3 class="card-title">Science Experiments</h3>
+                        <p class="card-description">Fun hands-on experiments you can do at home.</p>
+                    </div>
+                </div>
+                <div class="video-card">
+                    <div class="video-thumbnail">
+                        <div class="play-button">▶</div>
+                    </div>
+                    <div class="card-content">
+                        <h3 class="card-title">Financial Literacy 101</h3>
+                        <p class="card-description">Learn to manage money and build financial independence.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Courses Tab -->
+        <div class="tab-content" id="courses">
+            <h2 class="section-title">🎓 Learning Paths</h2>
+            <div class="content-grid">
+                <div class="course-card">
+                    <h3 class="card-title">Digital Literacy Basics</h3>
+                    <p class="card-description">5 lessons • 2 hours</p>
+                    <div class="course-progress">
+                        <small style="color: var(--text-light);">60% Complete</small>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 60%"></div>
+                        </div>
+                    </div>
+                    <ul class="lessons-list">
+                        <li class="lesson-item">
+                            <span>📝 Introduction to Digital World</span>
+                            <div class="lesson-status completed"></div>
+                        </li>
+                        <li class="lesson-item">
+                            <span>🔒 Internet Safety</span>
+                            <div class="lesson-status completed"></div>
+                        </li>
+                        <li class="lesson-item">
+                            <span>📄 Creating Documents</span>
+                            <div class="lesson-status completed"></div>
+                        </li>
+                        <li class="lesson-item">
+                            <span>📧 Email Etiquette</span>
+                            <div class="lesson-status"></div>
+                        </li>
+                        <li class="lesson-item">
+                            <span>💻 Online Collaboration</span>
+                            <div class="lesson-status"></div>
+                        </li>
+                    </ul>
+                </div>
+                <div class="course-card">
+                    <h3 class="card-title">Web Development Fundamentals</h3>
+                    <p class="card-description">4 lessons • 3 hours</p>
+                    <div class="course-progress">
+                        <small style="color: var(--text-light);">25% Complete</small>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 25%"></div>
+                        </div>
+                    </div>
+                    <ul class="lessons-list">
+                        <li class="lesson-item">
+                            <span>🌐 What is the Web?</span>
+                            <div class="lesson-status completed"></div>
+                        </li>
+                        <li class="lesson-item">
+                            <span>📝 HTML Basics</span>
+                            <div class="lesson-status"></div>
+                        </li>
+                        <li class="lesson-item">
+                            <span>🎨 CSS Styling</span>
+                            <div class="lesson-status"></div>
+                        </li>
+                        <li class="lesson-item">
+                            <span>⚡ JavaScript Intro</span>
+                            <div class="lesson-status"></div>
+                        </li>
+                    </ul>
+                </div>
+                <div class="course-card">
+                    <h3 class="card-title">Entrepreneurship Essentials</h3>
+                    <p class="card-description">6 lessons • 4 hours</p>
+                    <div class="course-progress">
+                        <small style="color: var(--text-light);">0% Complete</small>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <ul class="lessons-list">
+                        <li class="lesson-item">
+                            <span>💡 Identifying Opportunities</span>
+                            <div class="lesson-status"></div>
+                        </li>
+                        <li class="lesson-item">
+                            <span>📋 Business Planning</span>
+                            <div class="lesson-status"></div>
+                        </li>
+                        <li class="lesson-item">
+                            <span>💰 Financial Management</span>
+                            <div class="lesson-status"></div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Profile Tab -->
+        <div class="tab-content" id="profile">
+            <div class="profile-header">
+                <div class="profile-avatar">👩‍🎓</div>
+                <h2>MaryWhite Ewona</h2>
+                <p>Member since January 2025</p>
+            </div>
+            
+            <div class="progress-card">
+                <h2 class="section-title">🏆 Achievements</h2>
+                <div class="progress-stats">
+                    <div class="stat">
+                        <div class="stat-number">15</div>
+                        <div class="stat-label">Badges Earned</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number">150</div>
+                        <div class="stat-label">Learning Hours</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number">92%</div>
+                        <div class="stat-label">Completion Rate</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="progress-card">
+                <h2 class="section-title">🎯 Current Goals</h2>
+                <div class="lessons-list">
+                    <div class="lesson-item">
+                        <span>Complete Digital Literacy Course</span>
+                        <div class="lesson-status"></div>
+                    </div>
+                    <div class="lesson-item">
+                        <span>Read 3 Books This Month</span>
+                        <div class="lesson-status"></div>
+                    </div>
+                    <div class="lesson-item">
+                        <span>Watch 10 Educational Videos</span>
+                        <div class="lesson-status completed"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Tab Navigation
+        const tabs = document.querySelectorAll('.nav-tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                // Remove active class from all tabs and contents
+                tabs.forEach(t => t.classList.remove('active'));
+                tabContents.forEach(c => c.classList.remove('active'));
+
+                // Add active class to clicked tab
+                tab.classList.add('active');
+
+                // Show corresponding content
+                const tabId = tab.getAttribute('data-tab');
+                document.getElementById(tabId).classList.add('active');
+            });
+        });
+
+        // Card click interactions
+        document.querySelectorAll('.card, .video-card, .lesson-item').forEach(card => {
+            card.addEventListener('click', function() {
+                // Add ripple effect
+                this.style.transform = 'scale(0.98)';
+                setTimeout(() => {
+                    this.style.transform = '';
+                }, 200);
+            });
+        });
+
+        // Smooth scroll behavior
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
