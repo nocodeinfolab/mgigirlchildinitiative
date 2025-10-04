@@ -489,7 +489,7 @@
             loginBtn.innerHTML = '<span class="loading"></span>';
 
             try {
-                // TODO: Replace with your actual Cloudflare Workers endpoint
+                
                 const response = await fetch('https://mgi-login-worker.stevechikeabia.workers.dev/login', {
                     method: 'POST',
                     headers: {
@@ -501,6 +501,8 @@
                 const data = await response.json();
 
                 if (response.ok) {
+                    localStorage.setItem('userEmail', data.email);
+                    localStorage.setItem('userRowId', data.row_id);
                     showMessage('Login successful! Redirecting...', 'success');
                     
                     setTimeout(() => {
