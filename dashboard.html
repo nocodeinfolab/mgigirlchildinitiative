@@ -796,6 +796,30 @@
     </div>
 
     <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const userEmail = localStorage.getItem('userEmail');
+            const userRowId = localStorage.getItem('userRowId');
+
+            // Redirect if not logged in
+            if (!userEmail || !userRowId) {
+                alert("Please log in to access the dashboard.");
+                window.location.href = "index.html";
+                return;
+            }
+
+            // Insert user info dynamically
+            const welcomeText = document.querySelector('.welcome h1');
+            const profileName = document.querySelector('#profile h2');
+            const profileEmail = document.createElement('p');
+
+            // Assume name is part of email for now
+            const userName = userEmail.split('@')[0];
+
+            welcomeText.textContent = `Welcome back, ${userName}! ✨`;
+            profileName.textContent = userName.charAt(0).toUpperCase() + userName.slice(1);
+            profileEmail.textContent = `Email: ${userEmail}`;
+            document.querySelector('#profile .profile-header').appendChild(profileEmail);
+        });
         // Tab Navigation
         const tabs = document.querySelectorAll('.nav-tab');
         const tabContents = document.querySelectorAll('.tab-content');
