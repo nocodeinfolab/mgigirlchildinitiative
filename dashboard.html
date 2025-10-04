@@ -505,10 +505,10 @@
         <div class="tab-content active" id="home">
             <!-- Welcome Section -->
             <div class="welcome">
-                <h1>Welcome back, MaryWhite! ✨</h1>
+                <h1 id="welcomeName">Welcome back, ... ✨</h1>
                 <p>Empowering girls through knowledge & skills</p>
+                <div id="userDetails" style="margin-top: 0.5rem; font-size: 0.9rem; color: #555;"></div>
             </div>
-
             <!-- Progress Section -->
             <div class="progress-card">
                 <h2 class="section-title">📊 Your Progress</h2>
@@ -805,29 +805,52 @@
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const userEmail = localStorage.getItem('userEmail');
-            const userRowId = localStorage.getItem('userRowId');
+        document.addEventListener('DOMContentLoaded', async () => {
+            const rowId = localStorage.getItem('userRowId');
+            const email = localStorage.getItem('userEmail');
 
-            // Redirect if not logged in
-            if (!userEmail || !userRowId) {
-                alert("Please log in to access the dashboard.");
-                window.location.href = "index.html";
+            if (!rowId || !email) {
+                alert('Session expired. Please log in again.');
+                window.location.href = '/index.html';
                 return;
             }
 
-            // Insert user info dynamically
-            const welcomeText = document.querySelector('.welcome h1');
-            const profileName = document.querySelector('#profile h2');
-            const profileEmail = document.createElement('p');
+            const welcomeName = document.getElementById('welcomeName');
+            const userDetails = document.getElementById('userDetails');
 
-            // Assume name is part of email for now
-            const userName = userEmail.split('@')[0];
+            // Show temporary placeholder
+            welcomeName.textContent = 'Loading your profile...';
+            userDetails.textContent = '';
 
-            welcomeText.textContent = `Welcome back, ${userName}! ✨`;
-            profileName.textContent = userName.charAt(0).toUpperCase() + userName.slice(1);
-            profileEmail.textContent = `Email: ${userEmail}`;
-            document.querySelector('#profile .profile-header').appendChild(profileEmail);
+            try {
+                // Make request to Cloudflare Worker
+                const response = await fetch(`https://your-worker-domain.workers.dev/get_user_data?row_id=${rowId}`);
+
+                if (!response.ok) throw new Error('Network response was not ok');
+
+                const user = await response.json();
+                console.log('User data:', user);
+
+                // Fill in the dynamic welcome message
+                const firstName = user['First Name'] || 'User';
+                const lastName = user['Last Name'] || '';
+                const city = user['City'] || '—';
+                const dob = user['Date of Birth'] || '—';
+                const email = user['Email'] || '';
+
+                welcomeName.textContent = `Welcome back, ${firstName} ${lastName}! ✨`;
+
+                // Optional: show more details below
+                userDetails.innerHTML = `
+                    <p><strong>Email:</strong> ${email}</p>
+                    <p><strong>City:</strong> ${city}</p>
+                    <p><strong>Date of Birth:</strong> ${dob}</p>
+                `;
+            } catch (error) {
+                console.error('Error fetching user data:', error);
+                welcomeName.textContent = 'Error loading profile 😞';
+                userDetails.textContent = 'Please try again later.';
+            }
         });
         document.getElementById('logoutBtn').addEventListener('click', () => {
             localStorage.removeItem('userEmail');
