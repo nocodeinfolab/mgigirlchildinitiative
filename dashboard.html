@@ -474,6 +474,15 @@
                 <div class="logo">💜</div>
                 <span class="brand-name">MGI Digital Learning Hub</span>
             </div>
+            <button id="logoutBtn" style="
+                background: white;
+                color: var(--primary);
+                border: none;
+                padding: 0.3rem 0.3rem;
+                border-radius: 5px;
+                font-weight:;
+                cursor: pointer;
+            ">Logout</button>
         </div>
     </header>
 
@@ -819,6 +828,11 @@
             profileName.textContent = userName.charAt(0).toUpperCase() + userName.slice(1);
             profileEmail.textContent = `Email: ${userEmail}`;
             document.querySelector('#profile .profile-header').appendChild(profileEmail);
+        });
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            localStorage.removeItem('userEmail');
+            localStorage.removeItem('userRowId');
+            window.location.href = 'index.html';
         });
         // Tab Navigation
         const tabs = document.querySelectorAll('.nav-tab');
