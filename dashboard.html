@@ -692,6 +692,51 @@
             </div>
         </div>
     </div>
+        <!-- Resource Viewer Overlay -->
+    <div id="resourceViewer" style="
+        display: none;
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: rgba(0,0,0,0.7);
+        backdrop-filter: blur(4px);
+        z-index: 9999;
+        justify-content: center;
+        align-items: center;
+    ">
+        <div style="
+            background: white;
+            width: 90%;
+            height: 90%;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        ">
+            <button id="closeViewerBtn" style="
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                background: var(--primary);
+                color: white;
+                border: none;
+                padding: 8px 14px;
+                border-radius: 5px;
+                cursor: pointer;
+                font-weight: bold;
+            ">✖ Close</button>
+
+            <iframe id="viewerFrame" src="" style="
+                width: 100%;
+                height: 100%;
+                border: none;
+                border-radius: 10px;
+            "></iframe>
+        </div>
+    </div>
+
 
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
@@ -793,8 +838,13 @@
                     `;
 
                     card.addEventListener('click', () => {
-                        if (fileUrl) window.open(fileUrl, '_blank');
+                        if (fileUrl) {
+                            openInAppViewer(fileUrl);
+                        } else {
+                            alert('No resource available to open.');
+                        }
                     });
+
 
                     return card;
                 }
@@ -849,6 +899,21 @@
 
         // Load resources when page loads
         loadResources();
+        // === Resource Viewer Logic ===
+        document.getElementById('closeViewerBtn').addEventListener('click', () => {
+            const viewer = document.getElementById('resourceViewer');
+            const frame = document.getElementById('viewerFrame');
+            frame.src = '';
+            viewer.style.display = 'none';
+        });
+
+        function openInAppViewer(url) {
+            const viewer = document.getElementById('resourceViewer');
+            const frame = document.getElementById('viewerFrame');
+            frame.src = url;
+            viewer.style.display = 'flex';
+        }
+
 
         document.getElementById('logoutBtn').addEventListener('click', () => {
             localStorage.removeItem('userEmail');
