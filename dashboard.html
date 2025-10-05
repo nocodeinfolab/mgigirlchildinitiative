@@ -954,9 +954,13 @@
                         const res = await fetch(`https://mgi-login-worker.stevechikeabia.workers.dev/update_progress`, {
                             method: 'PATCH',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ userRowId, resourceId, type })
+                            body: JSON.stringify({
+                                rowId: userRowId,  
+                                resourceId: resourceId,
+                                type: type
+                            })
                         });
-
+                            
                         const data = await res.json();
                         console.log('✅ Progress updated:', data);
 
