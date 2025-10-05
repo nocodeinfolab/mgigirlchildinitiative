@@ -949,7 +949,7 @@
 
             // For PDFs from Baserow (Google Docs Viewer)
             else if (type === 'Book' && url.endsWith('.pdf')) {
-                frame.src = \`https://docs.google.com/gview?url=\${encodeURIComponent(url)}&embedded=true\`;
+                frame.src = `https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`;
                 setupBookTimer(url);
             }
 
