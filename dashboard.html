@@ -580,91 +580,16 @@
         <div class="tab-content" id="books">
             <h2 class="section-title">📚 Book Library</h2>
             <div class="content-grid">
-                <div class="card">
-                    <div class="card-image">
-                        <img src="https://www.learncomputerscienceonline.com/wp-content/uploads/2022/07/Introduction-To-Computer-Science-Beginners-Guide-To-Computer-Science-CS-CS-Major-Computer-Science.jpg" 
-                             alt="Introduction to Computer Science" 
-                             style="width: 100%; height: 100%; object-fit: cover;">
-                    </div>
-                    <div class="card-content">
-                        <h3 class="card-title">Introduction to Computer Science</h3>
-                        <p class="card-description">Learn the fundamentals of computing and programming.</p>
-                    </div>
-                </div>
-
-
-                <div class="card">
-                    <div class="card-image">
-                        <img src="https://storage.googleapis.com/msgsndr/3vS9SHc3xwilMUcXtkPR/media/664f5f1b04581fa16003ce5a.jpeg"
-                        alt="Leadership and Confidence"
-                        style="width: 100%; height: 100%; object-fit: cover;">
-                    </div>
-                    <div class="card-content">
-                        <h3 class="card-title">Leadership & Confidence</h3>
-                        <p class="card-description">Develop leadership skills and build self-confidence.</p>
-                    </div>
-                </div>
-                <div class="card">
-                    <div class="card-image">📙</div>
-                    <div class="card-content">
-                        <h3 class="card-title">Creative Writing Guide</h3>
-                        <p class="card-description">Express yourself through the power of writing.</p>
-                    </div>
-                </div>
-                <div class="card">
-                    <div class="card-image">
-                        <img src="https://www.clickvieweducation.com/_next/image?url=https%3A%2F%2Fcms.clickvieweducation.com%2Fwp-content%2Fuploads%2F2025%2F03%2FInternational-Day-of-Mathematics-Activities.png&w=3840&q=100"
-                        alt="Mathematics Made Easy"
-                        style="width: 100%; height: 100%; object-fit: cover;">
-                    </div>
-                    <div class="card-content">
-                        <h3 class="card-title">Mathematics Made Easy</h3>
-                        <p class="card-description">Build confidence with step-by-step math tutorials.</p>
-                    </div>
-                </div>
+                <!-- Dynamic book cards will be appended here by JS -->
             </div>
         </div>
+
 
         <!-- Videos Tab -->
         <div class="tab-content" id="videos">
             <h2 class="section-title">🎥 Video Library</h2>
             <div class="content-grid">
-                <div class="video-card">
-                    <div class="video-thumbnail">
-                        <div class="play-button">▶</div>
-                    </div>
-                    <div class="card-content">
-                        <h3 class="card-title">HTML & CSS Basics</h3>
-                        <p class="card-description">Build your first website from scratch.</p>
-                    </div>
-                </div>
-                <div class="video-card">
-                    <div class="video-thumbnail">
-                        <div class="play-button">▶</div>
-                    </div>
-                    <div class="card-content">
-                        <h3 class="card-title">Public Speaking Skills</h3>
-                        <p class="card-description">Overcome stage fright and speak with confidence.</p>
-                    </div>
-                </div>
-                <div class="video-card">
-                    <div class="video-thumbnail">
-                        <div class="play-button">▶</div>
-                    </div>
-                    <div class="card-content">
-                        <h3 class="card-title">Science Experiments</h3>
-                        <p class="card-description">Fun hands-on experiments you can do at home.</p>
-                    </div>
-                </div>
-                <div class="video-card">
-                    <div class="video-thumbnail">
-                        <div class="play-button">▶</div>
-                    </div>
-                    <div class="card-content">
-                        <h3 class="card-title">Financial Literacy 101</h3>
-                        <p class="card-description">Learn to manage money and build financial independence.</p>
-                    </div>
-                </div>
+                
             </div>
         </div>
 
@@ -852,6 +777,86 @@
                 userDetails.textContent = 'Please try again later.';
             }
         });
+        // --- Fetch resources for Books and Videos ---
+        async function loadResources() {
+            const booksContainer = document.querySelector('#books .content-grid');
+            const videosContainer = document.querySelector('#videos .content-grid');
+
+            // Clear existing cards (if any placeholder exists)
+            booksContainer.innerHTML = '';
+            videosContainer.innerHTML = '';
+
+            try {
+                // Make request to your backend script
+                const response = await fetch('https://mgi-login-worker.stevechikeabia.workers.dev/get_resources');
+
+                if (!response.ok) throw new Error('Failed to fetch resources');
+
+                const resources = await response.json();
+                console.log('Resources fetched:', resources);
+
+                // Loop through each resource
+                resources.forEach(resource => {
+                    const {
+                        'Resource ID': id,
+                        Image: image,
+                        Topic: title,
+                        'Resource Type': type,
+                        Description: description,
+                        Author: author,
+                        File: file
+                    } = resource;
+
+                    // Create card element
+                    const card = document.createElement('div');
+                    card.classList.add(type === 'Video' ? 'video-card' : 'card');
+
+                    // Card inner HTML
+                    if (type === 'Video') {
+                        card.innerHTML = `
+                            <div class="video-thumbnail">
+                                <img src="${image}" alt="${title}" style="width:100%; height:100%; object-fit:cover;">
+                                <div class="play-button">▶</div>
+                            </div>
+                            <div class="card-content">
+                                <h3 class="card-title">${title}</h3>
+                                <p class="card-description">${description}</p>
+                                <small>By ${author}</small>
+                            </div>
+                        `;
+                    } else {
+                        card.innerHTML = `
+                            <div class="card-image">
+                                <img src="${image}" alt="${title}" style="width:100%; height:100%; object-fit:cover;">
+                            </div>
+                            <div class="card-content">
+                                <h3 class="card-title">${title}</h3>
+                                <p class="card-description">${description}</p>
+                                <small>By ${author}</small>
+                            </div>
+                        `;
+                    }
+
+                    // Optional: click to open the file
+                    card.addEventListener('click', () => {
+                        if (file) window.open(file, '_blank');
+                    });
+
+                    // Append to correct tab
+                    if (type === 'Video') videosContainer.appendChild(card);
+                    else booksContainer.appendChild(card);
+                });
+
+            } catch (error) {
+                console.error('Error loading resources:', error);
+                booksContainer.innerHTML = '<p style="color:red;">Failed to load books. Try again later.</p>';
+                videosContainer.innerHTML = '<p style="color:red;">Failed to load videos. Try again later.</p>';
+            }
+        }
+
+        // Call this function after page loads
+        loadResources();
+
         document.getElementById('logoutBtn').addEventListener('click', () => {
             localStorage.removeItem('userEmail');
             localStorage.removeItem('userRowId');
