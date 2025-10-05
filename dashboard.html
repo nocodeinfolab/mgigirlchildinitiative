@@ -827,7 +827,7 @@
                 console.log('✅ Resources fetched:', resources);
 
                 // Helper function to create a resource card
-                function createCard({ topic, description, author, image, file, resourceType, featured }) {
+                function createCard({ topic, description, author, image, file, resourceType, featured, resourceId }) {
                     const imageUrl = Array.isArray(image) && image.length > 0
                         ? image[0].url
                         : 'https://via.placeholder.com/300x200?text=No+Image';
