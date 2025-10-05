@@ -786,8 +786,8 @@
                 const email = user['Email'] || '';
 
                 welcomeName.textContent = `Welcome back, ${firstName}! ✨`;
-                updateProgressDisplay();
-            
+
+                
             } catch (error) {
                 console.error('Error fetching user data:', error);
                 welcomeName.textContent = 'Error loading profile 😞';
@@ -848,17 +848,22 @@
 
                     card.addEventListener('click', () => {
                         if (fileUrl) {
-                            if (fileUrl.endsWith('.mp4')) {
-                                openInAppViewer(fileUrl, 'Video');
+                            if (fileUrl.endsWith('.mp4') || fileUrl.includes('youtube')) {
+                                // Videos play directly in iframe
+                                openInAppViewer(fileUrl);
                             } else if (fileUrl.endsWith('.pdf')) {
-                                openInAppViewer(fileUrl, 'Book');
+                                // PDFs open via Google Docs Viewer for better in-app experience
+                                openInAppViewer(`https://docs.google.com/gview?url=${encodeURIComponent(fileUrl)}&embedded=true`);
                             } else {
-                                openInAppViewer(fileUrl, 'Other');
+                                // Other types (like HTML pages or images)
+                                openInAppViewer(fileUrl);
                             }
                         } else {
                             alert('No resource available to open.');
                         }
                     });
+
+
 
                     return card;
                 }
@@ -870,7 +875,7 @@
                 const bookResources = resources.filter(r => r.resourceType === 'Book');
                 const videoResources = resources.filter(r => r.resourceType === 'Video');
 
-                // Limit featured to 3 
+                // Limit featured to 3 (optional)
                 const limitedFeatured = featuredResources.slice(0, 3);
 
                 // Add featured cards
@@ -919,115 +924,13 @@
             const frame = document.getElementById('viewerFrame');
             frame.src = '';
             viewer.style.display = 'none';
-            clearTimeout(bookTimer);
         });
-        function openInAppViewer(url, type) {
+
+        function openInAppViewer(url) {
             const viewer = document.getElementById('resourceViewer');
             const frame = document.getElementById('viewerFrame');
+            frame.src = url;
             viewer.style.display = 'flex';
-
-            // For MP4 videos from Baserow
-            if (type === 'Video' && url.endsWith('.mp4')) {
-                const videoPage = `
-                    <!DOCTYPE html>
-                    <html>
-                    <head><meta charset="utf-8"><title>Video Player</title></head>
-                    <body style="margin:0;display:flex;justify-content:center;align-items:center;height:100vh;background:#000;">
-                        <video id="videoPlayer" controls style="width:100%;max-width:900px;height:auto;">
-                            <source src="${url}" type="video/mp4">
-                        </video>
-                        <script>
-                            const video = document.getElementById('videoPlayer');
-                            video.addEventListener('ended', () => {
-                                window.parent.postMessage({ type: 'videoCompleted', videoUrl: '${url}' }, '*');
-                            });
-                        </script>
-                    </body>
-                    </html>`;
-                frame.srcdoc = videoPage; // ✅ load custom HTML instead of external file
-            }
-
-            // For PDFs from Baserow (Google Docs Viewer)
-            else if (type === 'Book' && url.endsWith('.pdf')) {
-                frame.src = `https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`;
-                setupBookTimer(url);
-            }
-
-            // For other types
-            else {
-                frame.src = url;
-            }
-        }
-        // Listen for video completion events from iframe
-        window.addEventListener('message', event => {
-            if (event.data?.type === 'videoCompleted') {
-                markResourceAsRead(event.data.videoUrl, 'Video');
-            }
-        });
-
-        // Book reading timer logic
-        let bookTimer;
-        function setupBookTimer(fileUrl) {
-            clearTimeout(bookTimer);
-            bookTimer = setTimeout(() => {
-                markResourceAsRead(fileUrl, 'Book');
-            }, 45000); // 45 seconds = considered read
-        }
-        // --- Progress Tracking System ---
-
-        // Marks a resource as completed (book or video)
-        async function markResourceAsRead(resourceId, type) {
-            const key = type === 'Book' ? 'booksRead' : 'videosWatched';
-            const list = JSON.parse(localStorage.getItem(key)) || [];
-
-            // Prevent double-counting
-            if (!list.includes(resourceId)) {
-                list.push(resourceId);
-                localStorage.setItem(key, JSON.stringify(list));
-
-                // Update UI immediately
-                updateProgressDisplay();
-
-                // Sync to server (so it persists across devices)
-                await syncProgressWithServer();
-            }
-        }
-
-        // Updates the visible numbers on the dashboard
-        function updateProgressDisplay() {
-            const books = JSON.parse(localStorage.getItem('booksRead')) || [];
-            const videos = JSON.parse(localStorage.getItem('videosWatched')) || [];
-
-            // 🧠 Your stat order on the dashboard:
-            // 1. Courses Completed
-            // 2. Lessons Finished
-            // 3. Books Read
-            document.querySelector('.progress-stats .stat:nth-child(2) .stat-number').textContent = videos.length;
-            document.querySelector('.progress-stats .stat:nth-child(3) .stat-number').textContent = books.length;
-        }
-
-        // Sends progress totals to Baserow via your Cloudflare Worker
-        async function syncProgressWithServer() {
-            const rowId = localStorage.getItem('userRowId');
-            if (!rowId) return;
-
-            const books = JSON.parse(localStorage.getItem('booksRead')) || [];
-            const videos = JSON.parse(localStorage.getItem('videosWatched')) || [];
-
-            try {
-                await fetch('https://mgi-login-worker.stevechikeabia.workers.dev/update_progress', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        row_id: rowId,
-                        booksRead: books.length,
-                        videosWatched: videos.length
-                    })
-                });
-                console.log('✅ Progress synced to server');
-            } catch (error) {
-                console.error('❌ Error syncing progress:', error);
-            }
         }
 
 
