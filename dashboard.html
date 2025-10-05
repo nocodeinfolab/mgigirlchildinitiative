@@ -469,7 +469,7 @@
         }
         #welcomeName {
             color: var(--primary);
-            font-size: 1.5rem;
+            font-size: 1rem;
         }
         #userDetails p {
             margin: 0.3rem 0;
@@ -853,14 +853,9 @@
                 const dob = user['Date of Birth'] || '—';
                 const email = user['Email'] || '';
 
-                welcomeName.textContent = `Welcome back, ${firstName} ${lastName}! ✨`;
+                welcomeName.textContent = `Welcome back, ${firstName}! ✨`;
 
-                // Optional: show more details below
-                userDetails.innerHTML = `
-                    <p><strong>Email:</strong> ${email}</p>
-                    <p><strong>City:</strong> ${city}</p>
-                    <p><strong>Date of Birth:</strong> ${dob}</p>
-                `;
+                
             } catch (error) {
                 console.error('Error fetching user data:', error);
                 welcomeName.textContent = 'Error loading profile 😞';
