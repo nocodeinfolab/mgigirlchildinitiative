@@ -779,87 +779,102 @@
         });
         // --- Fetch resources for Books and Videos ---
         async function loadResources() {
-            console.log('🔵 Loading resources...');
-
             const booksContainer = document.querySelector('#books .content-grid');
             const videosContainer = document.querySelector('#videos .content-grid');
+            const featuredContainer = document.querySelector('.featured-grid');
 
-            // Clear placeholders
+            // Clear existing placeholder cards
             booksContainer.innerHTML = '';
             videosContainer.innerHTML = '';
+            featuredContainer.innerHTML = '';
 
             try {
-                // Fetch from Cloudflare Worker endpoint
-                const response = await fetch('https://mgi-login-worker.stevechikeabia.workers.dev/get_resources', {
-                    method: 'GET',
-                    headers: { 'Accept': 'application/json' }
-                });
-
-                if (!response.ok) throw new Error(`HTTP ${response.status} - ${response.statusText}`);
+                const response = await fetch('https://mgi-login-worker.stevechikeabia.workers.dev/get_resources');
+                if (!response.ok) throw new Error('Failed to fetch resources');
 
                 const resources = await response.json();
-                console.log('✅ Resources fetched successfully:', resources);
+                console.log('✅ Resources fetched:', resources);
 
-                if (!Array.isArray(resources) || resources.length === 0) {
-                    booksContainer.innerHTML = '<p>No resources available yet.</p>';
-                    videosContainer.innerHTML = '<p>No videos available yet.</p>';
-                    return;
-                }
-
-                // Loop and render dynamically
-                resources.forEach(resource => {
-                    const {
-                        resourceId,
-                        topic,
-                        resourceType,
-                        description,
-                        author,
-                        image,
-                        file
-                    } = resource;
-
-                    // Safely extract image and file URLs (Baserow returns them as arrays)
-                    const imageUrl = Array.isArray(image) && image.length > 0 ? image[0].url : 'https://via.placeholder.com/300x200?text=No+Image';
+                // Helper function to create a resource card
+                function createCard({ topic, description, author, image, file, resourceType, featured }) {
+                    const imageUrl = Array.isArray(image) && image.length > 0
+                        ? image[0].url
+                        : 'https://via.placeholder.com/300x200?text=No+Image';
                     const fileUrl = Array.isArray(file) && file.length > 0 ? file[0].url : '';
-
-                    const title = topic || 'Untitled';
                     const type = resourceType || 'Book';
+                    const title = topic || 'Untitled';
                     const desc = description || 'No description available.';
                     const writer = author || 'Unknown Author';
 
                     const card = document.createElement('div');
-                    card.classList.add(type === 'Video' ? 'video-card' : 'card');
-
+                    card.classList.add('card');
                     card.innerHTML = `
-                        <div class="${type === 'Video' ? 'video-thumbnail' : 'card-image'}">
+                        <div class="card-image">
                             <img src="${imageUrl}" alt="${title}" style="width:100%; height:100%; object-fit:cover;">
-                            ${type === 'Video' ? '<div class="play-button">▶</div>' : ''}
                         </div>
                         <div class="card-content">
+                            ${featured ? `<span class="card-tag">${featured}</span>` : ''}
                             <h3 class="card-title">${title}</h3>
                             <p class="card-description">${desc}</p>
                             <small>By ${writer}</small>
                         </div>
                     `;
-                    // Click opens the resource file or link
+
                     card.addEventListener('click', () => {
                         if (fileUrl) window.open(fileUrl, '_blank');
                     });
 
-                    // Append to appropriate tab
-                    if (type === 'Video') videosContainer.appendChild(card);
-                    else booksContainer.appendChild(card);
-                });
+                    return card;
+                }
+
+                // Separate featured, books, and videos
+                const featuredResources = resources.filter(r =>
+                    r.featured && r.featured.toLowerCase().includes('featured')
+                );
+                const bookResources = resources.filter(r => r.resourceType === 'Book');
+                const videoResources = resources.filter(r => r.resourceType === 'Video');
+
+                // Add featured cards
+                if (featuredResources.length > 0) {
+                    featuredResources.forEach(resource => {
+                        const card = createCard(resource);
+                        featuredContainer.appendChild(card);
+                    });
+                } else {
+                    featuredContainer.innerHTML = '<p>No featured resources available this week.</p>';
+                }
+
+                // Add book cards
+                if (bookResources.length > 0) {
+                    bookResources.forEach(resource => {
+                        const card = createCard(resource);
+                        booksContainer.appendChild(card);
+                    });
+                } else {
+                    booksContainer.innerHTML = '<p>No books available.</p>';
+                }
+
+                // Add video cards
+                if (videoResources.length > 0) {
+                    videoResources.forEach(resource => {
+                        const card = createCard(resource);
+                        videosContainer.appendChild(card);
+                    });
+                } else {
+                    videosContainer.innerHTML = '<p>No videos available.</p>';
+                }
 
             } catch (error) {
                 console.error('❌ Error loading resources:', error);
-                booksContainer.innerHTML = '<p style="color:red;">Failed to load books. Please try again later.</p>';
-                videosContainer.innerHTML = '<p style="color:red;">Failed to load videos. Please try again later.</p>';
+                booksContainer.innerHTML = '<p style="color:red;">Failed to load books.</p>';
+                videosContainer.innerHTML = '<p style="color:red;">Failed to load videos.</p>';
+                featuredContainer.innerHTML = '<p style="color:red;">Failed to load featured resources.</p>';
             }
         }
 
-        // Run after page load
-        document.addEventListener('DOMContentLoaded', loadResources);
+        // Load resources when page loads
+        loadResources();
+
 
 
         document.getElementById('logoutBtn').addEventListener('click', () => {
