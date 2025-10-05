@@ -533,47 +533,10 @@
             <section class="featured">
                 <h2 class="section-title">⭐ Featured This Week</h2>
                 <div class="featured-grid">
-                    <div class="card">
-                        <div class="card-image">
-                            <img src="https://i.ytimg.com/vi/6rsCyACgYTM/hq720.jpg?sqp=-oaymwEhCK4FEIIDSFryq4qpAxMIARUAAAAAGAElAADIQj0AgKJD&rs=AOn4CLB1LuajdRw06Jb524JMmPJ5zjq20A" 
-                                 alt="Digital Literacy Basics" 
-                                 style="width: 100%; height: 100%; object-fit: cover;">
-                        </div>
-                        <div class="card-content">
-                            <span class="card-tag">TRENDING COURSE</span>
-                            <h3 class="card-title">Digital Literacy Basics</h3>
-                            <p class="card-description">Master essential digital skills for the modern world. Learn internet safety, document creation, and more.</p>
-                        </div>
-                    </div>
-
-                    <div class="card">
-                        <div class="card-image">
-                            <img src="https://codeop.tech/wp-content/uploads/2025/02/A-Beginners-Guide-Best-Practices.jpg"
-                                 alt="A Beginners Guide"
-                                 style="width: 100%; height: 100%; object-fit: cover;">
-                        </div>
-                        <div class="card-content">
-                            <span class="card-tag">POPULAR VIDEO</span>
-                            <h3 class="card-title">Coding for Beginners</h3>
-                            <p class="card-description">Start your programming journey with fun, easy-to-follow tutorials designed just for you.</p>
-                        </div>
-                    </div>
-
-                    <div class="card">
-                        <div class="card-image">
-                            <img src="https://i.ytimg.com/vi/1BmMUpx0I9c/maxresdefault.jpg"
-                                 alt="Women in STEM"
-                                 style="width: 100%; height: 100%; object-fit: cover;">
-                        </div>
-                        <div class="card-content">
-                            <span class="card-tag">FEATURED BOOK</span>
-                            <h3 class="card-title">Women in STEM</h3>
-                            <p class="card-description">Inspiring stories of women who changed the world through science and technology.</p>
-                        </div>
-                    </div>
-
+                    <!-- Dynamic featured cards will appear here -->
                 </div>
             </section>
+
         </div>
 
         <!-- Books Tab -->
@@ -808,12 +771,21 @@
 
                     const card = document.createElement('div');
                     card.classList.add('card');
+
+                    // Determine featured tag
+                    let tagLabel = '';
+                    if (featured && featured.toLowerCase().includes('featured')) {
+                        if (type === 'Video') tagLabel = 'POPULAR VIDEO';
+                        else if (type === 'Book') tagLabel = 'FEATURED BOOK';
+                        else tagLabel = 'FEATURED RESOURCE';
+                    }
+
                     card.innerHTML = `
                         <div class="card-image">
                             <img src="${imageUrl}" alt="${title}" style="width:100%; height:100%; object-fit:cover;">
                         </div>
                         <div class="card-content">
-                            ${featured ? `<span class="card-tag">${featured}</span>` : ''}
+                            ${tagLabel ? `<span class="card-tag">${tagLabel}</span>` : ''}
                             <h3 class="card-title">${title}</h3>
                             <p class="card-description">${desc}</p>
                             <small>By ${writer}</small>
@@ -834,9 +806,12 @@
                 const bookResources = resources.filter(r => r.resourceType === 'Book');
                 const videoResources = resources.filter(r => r.resourceType === 'Video');
 
+                // Limit featured to 3 (optional)
+                const limitedFeatured = featuredResources.slice(0, 3);
+
                 // Add featured cards
-                if (featuredResources.length > 0) {
-                    featuredResources.forEach(resource => {
+                if (limitedFeatured.length > 0) {
+                    limitedFeatured.forEach(resource => {
                         const card = createCard(resource);
                         featuredContainer.appendChild(card);
                     });
@@ -874,8 +849,6 @@
 
         // Load resources when page loads
         loadResources();
-
-
 
         document.getElementById('logoutBtn').addEventListener('click', () => {
             localStorage.removeItem('userEmail');
