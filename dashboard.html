@@ -786,6 +786,20 @@
                 const email = user['Email'] || '';
 
                 welcomeName.textContent = `Welcome back, ${firstName}! ✨`;
+                // Fetch progress stats elements
+                const statNumbers = document.querySelectorAll('.progress-stats .stat-number');
+
+                // Assuming layout: [Courses Completed, Lessons Finished, Books Read]
+                const lessonsStat = statNumbers[1]; 
+                const booksStat = statNumbers[2];
+
+                // Get values from Baserow
+                const bookProgress = user['Book Progress'] || 0;
+                const videoProgress = user['Video Progress'] || 0;
+
+                // Update UI
+                lessonsStat.textContent = videoProgress;
+                booksStat.textContent = bookProgress;
 
                 
             } catch (error) {
