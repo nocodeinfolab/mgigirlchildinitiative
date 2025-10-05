@@ -839,11 +839,21 @@
 
                     card.addEventListener('click', () => {
                         if (fileUrl) {
-                            openInAppViewer(fileUrl);
+                            if (fileUrl.endsWith('.mp4') || fileUrl.includes('youtube')) {
+                                // Videos play directly in iframe
+                                openInAppViewer(fileUrl);
+                            } else if (fileUrl.endsWith('.pdf')) {
+                                // PDFs open via Google Docs Viewer for better in-app experience
+                                openInAppViewer(`https://docs.google.com/gview?url=${encodeURIComponent(fileUrl)}&embedded=true`);
+                            } else {
+                                // Other types (like HTML pages or images)
+                                openInAppViewer(fileUrl);
+                            }
                         } else {
                             alert('No resource available to open.');
                         }
                     });
+
 
 
                     return card;
