@@ -862,22 +862,11 @@
 
                     card.addEventListener('click', () => {
                         if (fileUrl) {
-                            if (fileUrl.endsWith('.mp4') || fileUrl.includes('youtube')) {
-                                // Videos play directly in iframe
-                                openInAppViewer(fileUrl);
-                            } else if (fileUrl.endsWith('.pdf')) {
-                                // PDFs open via Google Docs Viewer for better in-app experience
-                                openInAppViewer(`https://docs.google.com/gview?url=${encodeURIComponent(fileUrl)}&embedded=true`);
-                            } else {
-                                // Other types (like HTML pages or images)
-                                openInAppViewer(fileUrl);
-                            }
+                            openInAppViewer(fileUrl, type, resourceId); // pass type and resourceId
                         } else {
                             alert('No resource available to open.');
                         }
                     });
-
-
 
                     return card;
                 }
@@ -939,14 +928,73 @@
             frame.src = '';
             viewer.style.display = 'none';
         });
+        // Track clicked resources to prevent multiple increments
+        const completedResources = new Set();
 
-        function openInAppViewer(url) {
+        function openInAppViewer(url, type, resourceId) {
             const viewer = document.getElementById('resourceViewer');
             const frame = document.getElementById('viewerFrame');
-            frame.src = url;
-            viewer.style.display = 'flex';
-        }
 
+            // Open modal
+            frame.src = '';
+            viewer.style.display = 'flex';
+
+            const userRowId = localStorage.getItem('userRowId');
+            if (!userRowId) {
+                alert('User not logged in.');
+                return;
+            }
+
+            // Only update progress if this resource hasn't been clicked yet
+            if (!completedResources.has(resourceId)) {
+                completedResources.add(resourceId); // mark as clicked locally
+
+                async function updateProgress() {
+                    try {
+                        const res = await fetch(`https://your-worker-endpoint.com/update_progress`, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ userRowId, resourceId, type })
+                        });
+
+                        const data = await res.json();
+                        console.log('✅ Progress updated:', data);
+
+                        // Update frontend stats immediately
+                        if (data.updatedProgress) {
+                            if (type === 'Book') {
+                                document.querySelectorAll('.progress-card .stat-label').forEach(stat => {
+                                    if (stat.textContent.includes('Books Read')) {
+                                        stat.previousElementSibling.textContent = data.updatedProgress;
+                                    }
+                                });
+                            } else if (type === 'Video') {
+                                document.querySelectorAll('.progress-card .stat-label').forEach(stat => {
+                                    if (stat.textContent.includes('Lessons Finished')) {
+                                        stat.previousElementSibling.textContent = data.updatedProgress;
+                                    }
+                                });
+                            }
+                        }
+                    } catch (err) {
+                        console.error('❌ Failed to update progress:', err);
+                    }
+                }
+
+                updateProgress(); // Trigger PATCH request
+            } else {
+                console.log('Resource already clicked this session, not updating again.');
+            }
+
+            // Open resource
+            if (type === 'Video') {
+                frame.src = url;
+            } else if (type === 'Book') {
+                frame.src = `https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`;
+            } else {
+                frame.src = url;
+            }
+        }
 
         document.getElementById('logoutBtn').addEventListener('click', () => {
             localStorage.removeItem('userEmail');
