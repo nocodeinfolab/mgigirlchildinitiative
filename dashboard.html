@@ -793,12 +793,7 @@
                     `;
 
                     card.addEventListener('click', () => {
-                        if (fileUrl) {
-                            const viewer = document.getElementById('resourceViewer');
-                            const frame = document.getElementById('viewerFrame');
-                            frame.src = fileUrl;
-                            viewer.style.display = 'flex';
-                        }
+                        if (fileUrl) window.open(fileUrl, '_blank');
                     });
 
                     return card;
@@ -854,13 +849,6 @@
 
         // Load resources when page loads
         loadResources();
-        document.getElementById('closeViewerBtn').addEventListener('click', () => {
-            const viewer = document.getElementById('resourceViewer');
-            const frame = document.getElementById('viewerFrame');
-            frame.src = '';
-            viewer.style.display = 'none';
-        });
-
 
         document.getElementById('logoutBtn').addEventListener('click', () => {
             localStorage.removeItem('userEmail');
@@ -908,43 +896,5 @@
             });
         });
     </script>
-        <!-- In-App Viewer Modal -->
-    <div id="resourceViewer" style="
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        background: rgba(0,0,0,0.85);
-        display: none;
-        align-items: center;
-        justify-content: center;
-        flex-direction: column;
-        z-index: 1000;
-    ">
-        <button id="closeViewerBtn" style="
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: #fff;
-            color: #E91E63;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 5px;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 3px 6px rgba(0,0,0,0.2);
-        ">Close ✖</button>
-
-        <iframe id="viewerFrame" src="" style="
-            width: 90%;
-            height: 85%;
-            border: none;
-            border-radius: 10px;
-            background: #fff;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
-        " allowfullscreen></iframe>
-    </div>
-
 </body>
 </html>
