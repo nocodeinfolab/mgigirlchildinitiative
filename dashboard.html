@@ -218,6 +218,14 @@
             justify-content: center;
             font-size: 3rem;
             color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
         .card-content {
@@ -318,16 +326,40 @@
             color: var(--primary);
         }
 
-        /* Course Card */
-        .course-card {
+        /* Audio Card */
+        .audio-card {
             background: white;
             border-radius: 15px;
-            padding: 1.5rem;
+            overflow: hidden;
             box-shadow: var(--shadow);
         }
 
-        .course-progress {
-            margin-top: 1rem;
+        .audio-thumbnail {
+            width: 100%;
+            height: 180px;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--secondary) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .audio-icon {
+            font-size: 3rem;
+            color: white;
+        }
+
+        .audio-controls {
+            padding: 1rem;
+            background: var(--light-teal);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .audio-progress {
+            flex-grow: 1;
+            margin: 0 1rem;
         }
 
         .progress-bar {
@@ -343,6 +375,22 @@
             height: 100%;
             background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
             transition: width 0.3s;
+        }
+
+        .audio-time {
+            font-size: 0.8rem;
+            color: var(--text-light);
+            display: flex;
+            justify-content: space-between;
+            margin-top: 0.3rem;
+        }
+
+        /* Course Card */
+        .course-card {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
         }
 
         .lessons-list {
@@ -471,8 +519,6 @@
                 border-radius: 0 !important;
             }
         }
-
-        
     </style>
 </head>
 <body>
@@ -502,6 +548,7 @@
                 <li class="nav-tab active" data-tab="home">🏠 Home</li>
                 <li class="nav-tab" data-tab="books">📚 Books</li>
                 <li class="nav-tab" data-tab="videos">🎥 Videos</li>
+                <li class="nav-tab" data-tab="audio">🎵 Audio</li>
                 <li class="nav-tab" data-tab="courses">🎓 Courses</li>
                 <li class="nav-tab" data-tab="profile">👤 Profile</li>
             </ul>
@@ -534,6 +581,10 @@
                         <div class="stat-number"></div>
                         <div class="stat-label">Books Read</div>
                     </div>
+                    <div class="stat">
+                        <div class="stat-number"></div>
+                        <div class="stat-label">Audio Completed</div>
+                    </div>
                 </div>
             </div>
 
@@ -555,12 +606,19 @@
             </div>
         </div>
 
-
         <!-- Videos Tab -->
         <div class="tab-content" id="videos">
             <h2 class="section-title">🎥 Video Library</h2>
             <div class="content-grid">
-                
+                <!-- Dynamic video cards will be appended here by JS -->
+            </div>
+        </div>
+
+        <!-- Audio Tab -->
+        <div class="tab-content" id="audio">
+            <h2 class="section-title">🎵 Audio Library</h2>
+            <div class="content-grid">
+                <!-- Dynamic audio cards will be appended here by JS -->
             </div>
         </div>
 
@@ -696,11 +754,16 @@
                         <span>Watch 10 Educational Videos</span>
                         <div class="lesson-status completed"></div>
                     </div>
+                    <div class="lesson-item">
+                        <span>Listen to 5 Audio Lessons</span>
+                        <div class="lesson-status"></div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-        <!-- Resource Viewer Overlay -->
+    
+    <!-- Resource Viewer Overlay -->
     <div id="resourceViewer" style="
         display: none;
         position: fixed;
@@ -789,17 +852,20 @@
                 // Fetch progress stats elements
                 const statNumbers = document.querySelectorAll('.progress-stats .stat-number');
 
-                // Assuming layout: [Courses Completed, Lessons Finished, Books Read]
+                // Assuming layout: [Courses Completed, Lessons Finished, Books Read, Audio Completed]
                 const lessonsStat = statNumbers[1]; 
                 const booksStat = statNumbers[2];
+                const audioStat = statNumbers[3];
 
                 // Get values from Baserow
                 const bookProgress = user['Book Progress'] || 0;
                 const videoProgress = user['Video Progress'] || 0;
+                const audioProgress = user['Audio Progress'] || 0;
 
                 // Update UI
                 lessonsStat.textContent = videoProgress;
                 booksStat.textContent = bookProgress;
+                audioStat.textContent = audioProgress;
 
                 
             } catch (error) {
@@ -808,15 +874,18 @@
                 userDetails.textContent = 'Please try again later.';
             }
         });
-        // --- Fetch resources for Books and Videos ---
+        
+        // --- Fetch resources for Books, Videos and Audio ---
         async function loadResources() {
             const booksContainer = document.querySelector('#books .content-grid');
             const videosContainer = document.querySelector('#videos .content-grid');
+            const audioContainer = document.querySelector('#audio .content-grid');
             const featuredContainer = document.querySelector('.featured-grid');
 
             // Clear existing placeholder cards
             booksContainer.innerHTML = '';
             videosContainer.innerHTML = '';
+            audioContainer.innerHTML = '';
             featuredContainer.innerHTML = '';
 
             try {
@@ -845,6 +914,7 @@
                     if (featured && featured.toLowerCase().includes('featured')) {
                         if (type === 'Video') tagLabel = 'POPULAR VIDEO';
                         else if (type === 'Book') tagLabel = 'FEATURED BOOK';
+                        else if (type === 'Audio') tagLabel = 'FEATURED AUDIO';
                         else tagLabel = 'FEATURED RESOURCE';
                     }
 
@@ -871,12 +941,124 @@
                     return card;
                 }
 
-                // Separate featured, books, and videos
+                // Helper function to create an audio card with player controls
+                function createAudioCard({ topic, description, author, image, file, resourceType, featured, resourceId }) {
+                    const imageUrl = Array.isArray(image) && image.length > 0
+                        ? image[0].url
+                        : 'https://via.placeholder.com/300x200?text=No+Image';
+                    const fileUrl = Array.isArray(file) && file.length > 0 ? file[0].url : '';
+                    const type = resourceType || 'Audio';
+                    const title = topic || 'Untitled';
+                    const desc = description || 'No description available.';
+                    const writer = author || 'Unknown Author';
+
+                    const card = document.createElement('div');
+                    card.classList.add('audio-card');
+
+                    // Determine featured tag
+                    let tagLabel = '';
+                    if (featured && featured.toLowerCase().includes('featured')) {
+                        tagLabel = 'FEATURED AUDIO';
+                    }
+
+                    card.innerHTML = `
+                        <div class="audio-thumbnail">
+                            <div class="audio-icon">🎵</div>
+                        </div>
+                        <div class="card-content">
+                            ${tagLabel ? `<span class="card-tag">${tagLabel}</span>` : ''}
+                            <h3 class="card-title">${title}</h3>
+                            <p class="card-description">${desc}</p>
+                            <small>By ${writer}</small>
+                        </div>
+                        <div class="audio-controls">
+                            <button class="play-pause-btn" style="
+                                background: var(--primary);
+                                color: white;
+                                border: none;
+                                border-radius: 50%;
+                                width: 40px;
+                                height: 40px;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                cursor: pointer;
+                            ">▶</button>
+                            <div class="audio-progress">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: 0%"></div>
+                                </div>
+                                <div class="audio-time">
+                                    <span class="current-time">0:00</span>
+                                    <span class="duration">0:00</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    // Add audio player functionality
+                    const playPauseBtn = card.querySelector('.play-pause-btn');
+                    const progressFill = card.querySelector('.progress-fill');
+                    const currentTimeEl = card.querySelector('.current-time');
+                    const durationEl = card.querySelector('.duration');
+                    
+                    const audio = new Audio(fileUrl);
+                    let isPlaying = false;
+
+                    // Format time function
+                    function formatTime(seconds) {
+                        const mins = Math.floor(seconds / 60);
+                        const secs = Math.floor(seconds % 60);
+                        return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+                    }
+
+                    // Update progress bar and time
+                    audio.addEventListener('loadedmetadata', () => {
+                        durationEl.textContent = formatTime(audio.duration);
+                    });
+
+                    audio.addEventListener('timeupdate', () => {
+                        const progress = (audio.currentTime / audio.duration) * 100;
+                        progressFill.style.width = `${progress}%`;
+                        currentTimeEl.textContent = formatTime(audio.currentTime);
+                    });
+
+                    // Play/pause functionality
+                    playPauseBtn.addEventListener('click', () => {
+                        if (isPlaying) {
+                            audio.pause();
+                            playPauseBtn.textContent = '▶';
+                        } else {
+                            audio.play();
+                            playPauseBtn.textContent = '⏸';
+                            
+                            // Track progress for this audio resource
+                            if (!completedResources.has(resourceId)) {
+                                completedResources.add(resourceId);
+                                updateAudioProgress(resourceId);
+                            }
+                        }
+                        isPlaying = !isPlaying;
+                    });
+
+                    // Reset button when audio ends
+                    audio.addEventListener('ended', () => {
+                        isPlaying = false;
+                        playPauseBtn.textContent = '▶';
+                        progressFill.style.width = '100%';
+                        currentTimeEl.textContent = durationEl.textContent;
+                    });
+
+                    return card;
+                }
+
+                // Separate featured, books, videos, and audio
                 const featuredResources = resources.filter(r =>
                     r.featured && r.featured.toLowerCase().includes('featured')
                 );
                 const bookResources = resources.filter(r => r.resourceType === 'Book');
                 const videoResources = resources.filter(r => r.resourceType === 'Video');
+                const audioResources = resources.filter(r => r.resourceType === 'Audio');
 
                 // Limit featured to 3 (optional)
                 const limitedFeatured = featuredResources.slice(0, 3);
@@ -911,16 +1093,28 @@
                     videosContainer.innerHTML = '<p>No videos available.</p>';
                 }
 
+                // Add audio cards
+                if (audioResources.length > 0) {
+                    audioResources.forEach(resource => {
+                        const card = createAudioCard(resource);
+                        audioContainer.appendChild(card);
+                    });
+                } else {
+                    audioContainer.innerHTML = '<p>No audio resources available.</p>';
+                }
+
             } catch (error) {
                 console.error('❌ Error loading resources:', error);
                 booksContainer.innerHTML = '<p style="color:red;">Failed to load books.</p>';
                 videosContainer.innerHTML = '<p style="color:red;">Failed to load videos.</p>';
+                audioContainer.innerHTML = '<p style="color:red;">Failed to load audio resources.</p>';
                 featuredContainer.innerHTML = '<p style="color:red;">Failed to load featured resources.</p>';
             }
         }
 
         // Load resources when page loads
         loadResources();
+        
         // === Resource Viewer Logic ===
         document.getElementById('closeViewerBtn').addEventListener('click', () => {
             const viewer = document.getElementById('resourceViewer');
@@ -928,6 +1122,7 @@
             frame.src = '';
             viewer.style.display = 'none';
         });
+        
         // Track clicked resources to prevent multiple increments
         const completedResources = new Set();
 
@@ -1000,11 +1195,44 @@
             }
         }
 
+        // Function to update audio progress
+        async function updateAudioProgress(resourceId) {
+            const userRowId = localStorage.getItem('userRowId');
+            if (!userRowId) return;
+
+            try {
+                const res = await fetch(`https://mgi-login-worker.stevechikeabia.workers.dev/update_progress`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        rowId: userRowId,  
+                        resourceId: resourceId,
+                        type: 'Audio'
+                    })
+                });
+                    
+                const data = await res.json();
+                console.log('✅ Audio progress updated:', data);
+
+                // Update frontend stats immediately
+                if (data.updatedProgress) {
+                    document.querySelectorAll('.progress-card .stat-label').forEach(stat => {
+                        if (stat.textContent.includes('Audio Completed')) {
+                            stat.previousElementSibling.textContent = data.updatedProgress;
+                        }
+                    });
+                }
+            } catch (err) {
+                console.error('❌ Failed to update audio progress:', err);
+            }
+        }
+
         document.getElementById('logoutBtn').addEventListener('click', () => {
             localStorage.removeItem('userEmail');
             localStorage.removeItem('userRowId');
             window.location.href = 'index.html';
         });
+        
         // Tab Navigation
         const tabs = document.querySelectorAll('.nav-tab');
         const tabContents = document.querySelectorAll('.tab-content');
