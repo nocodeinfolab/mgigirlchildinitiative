@@ -959,8 +959,8 @@
             const frame = document.getElementById('viewerFrame');
 
             // Open modal
-            frame.src = '';
-            frame.srcdoc = '';
+            
+            
             viewer.style.display = 'flex';
 
             const userRowId = localStorage.getItem('userRowId');
@@ -1020,6 +1020,7 @@
             } else if (type === 'Book') {
                 frame.src = `https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`;
             } else if (type === 'Audio') {
+                frame.src = '';
                 // Create audio player HTML
                 frame.srcdoc = `
                     <!DOCTYPE html>
@@ -1071,6 +1072,7 @@
                     </html>
                 `;
             } else {
+                frame.srcdoc = '';
                 frame.src = url;
             }
         }
