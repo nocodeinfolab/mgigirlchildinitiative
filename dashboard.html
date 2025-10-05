@@ -464,6 +464,14 @@
                 padding: 0.8rem 1rem;
             }
         }
+        @media (max-width: 768px) {
+            #resourceViewer > div {
+                width: 100% !important;
+                height: 100% !important;
+                border-radius: 0 !important;
+            }
+        }
+
         
     </style>
 </head>
@@ -703,17 +711,19 @@
         z-index: 9999;
         justify-content: center;
         align-items: center;
+        overflow-y: auto; /* allow scrolling on desktop */
     ">
         <div style="
             background: white;
             width: 90%;
-            height: 90%;
+            max-width: 1200px; /* desktop max width */
+            min-height: 90%;    /* fill most of viewport */
             border-radius: 10px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.2);
             position: relative;
-            overflow: hidden;
             display: flex;
             flex-direction: column;
+            overflow: hidden; /* restrict iframe inside */
         ">
             <button id="closeViewerBtn" style="
                 position: absolute;
@@ -732,11 +742,10 @@
                 width: 100%;
                 height: 100%;
                 border: none;
-                border-radius: 10px;
+                flex: 1; /* fill available space */
             "></iframe>
         </div>
     </div>
-
 
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
