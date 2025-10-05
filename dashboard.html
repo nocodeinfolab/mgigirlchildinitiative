@@ -951,7 +951,7 @@
 
                 async function updateProgress() {
                     try {
-                        const res = await fetch(`https://your-worker-endpoint.com/update_progress`, {
+                        const res = await fetch(`https://mgi-login-worker.stevechikeabia.workers.dev/update_progress`, {
                             method: 'PATCH',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ userRowId, resourceId, type })
