@@ -502,6 +502,7 @@
                 <li class="nav-tab active" data-tab="home">🏠 Home</li>
                 <li class="nav-tab" data-tab="books">📚 Books</li>
                 <li class="nav-tab" data-tab="videos">🎥 Videos</li>
+                <li class="nav-tab" data-tab="audio">🎧 Audio</li>
                 <li class="nav-tab" data-tab="courses">🎓 Courses</li>
                 <li class="nav-tab" data-tab="profile">👤 Profile</li>
             </ul>
@@ -561,6 +562,13 @@
             <h2 class="section-title">🎥 Video Library</h2>
             <div class="content-grid">
                 
+            </div>
+        </div>
+        <!-- Audio Tab -->
+        <div class="tab-content" id="audio">
+            <h2 class="section-title">🎧 Audio Library</h2>
+            <div class="content-grid">
+                <!-- Dynamic audio cards will be appended here by JS -->
             </div>
         </div>
 
@@ -813,11 +821,15 @@
             const booksContainer = document.querySelector('#books .content-grid');
             const videosContainer = document.querySelector('#videos .content-grid');
             const featuredContainer = document.querySelector('.featured-grid');
+            const audioContainer = document.querySelector('#audio .content-grid');
+
 
             // Clear existing placeholder cards
             booksContainer.innerHTML = '';
             videosContainer.innerHTML = '';
             featuredContainer.innerHTML = '';
+            audioContainer.innerHTML = '';
+
 
             try {
                 const response = await fetch('https://mgi-login-worker.stevechikeabia.workers.dev/get_resources');
@@ -877,6 +889,7 @@
                 );
                 const bookResources = resources.filter(r => r.resourceType === 'Book');
                 const videoResources = resources.filter(r => r.resourceType === 'Video');
+                const audioResources = resources.filter(r => r.resourceType === 'Audio');
 
                 // Limit featured to 3 (optional)
                 const limitedFeatured = featuredResources.slice(0, 3);
