@@ -923,7 +923,16 @@
                 } else {
                     videosContainer.innerHTML = '<p>No videos available.</p>';
                 }
-
+                // Add audio cards
+                if (audioResources.length > 0) {
+                    audioResources.forEach(resource => {
+                        const card = createCard(resource);
+                        audioContainer.appendChild(card);
+                    });
+                } else {
+                    audioContainer.innerHTML = '<p>No audio resources available.</p>';
+                }
+                
             } catch (error) {
                 console.error('❌ Error loading resources:', error);
                 booksContainer.innerHTML = '<p style="color:red;">Failed to load books.</p>';
@@ -1008,11 +1017,62 @@
                 frame.src = url;
             } else if (type === 'Book') {
                 frame.src = `https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`;
+            } else if (type === 'Audio') {
+                // Create audio player HTML
+                frame.srcdoc = `
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <style>
+                            body {
+                                margin: 0;
+                                padding: 40px;
+                                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                                background: linear-gradient(135deg, #FCE4EC 0%, #F3E5F5 100%);
+                                display: flex;
+                                justify-content: center;
+                                align-items: center;
+                                min-height: 100vh;
+                            }
+                            .audio-container {
+                                background: white;
+                                padding: 3rem;
+                                border-radius: 20px;
+                                box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+                                text-align: center;
+                                max-width: 600px;
+                            }
+                            h2 {
+                                color: #9C27B0;
+                                margin-bottom: 2rem;
+                            }
+                            audio {
+                                width: 100%;
+                                margin-top: 1rem;
+                            }
+                            .icon {
+                                font-size: 4rem;
+                                margin-bottom: 1rem;
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="audio-container">
+                            <div class="icon">🎧</div>
+                            <h2>Audio Player</h2>
+                            <audio controls autoplay>
+                                <source src="${url}" type="audio/mpeg">
+                                Your browser does not support the audio element.
+                            </audio>
+                        </div>
+                    </body>
+                    </html>
+                `;
             } else {
                 frame.src = url;
             }
         }
-
+            
         document.getElementById('logoutBtn').addEventListener('click', () => {
             localStorage.removeItem('userEmail');
             localStorage.removeItem('userRowId');
