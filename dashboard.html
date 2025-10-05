@@ -948,6 +948,7 @@
             const viewer = document.getElementById('resourceViewer');
             const frame = document.getElementById('viewerFrame');
             frame.src = '';
+frame.srcdoc = '';
             viewer.style.display = 'none';
         });
         // Track clicked resources to prevent multiple increments
@@ -959,6 +960,7 @@
 
             // Open modal
             frame.src = '';
+frame.srcdoc = '';
             viewer.style.display = 'flex';
 
             const userRowId = localStorage.getItem('userRowId');
