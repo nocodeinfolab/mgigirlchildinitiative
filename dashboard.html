@@ -1088,78 +1088,26 @@
                             <small>By ${writer}</small>
                         </div>
                         <div class="video-player">
-                            <video>
+                            <video controls>
                                 <source src="${fileUrl}" type="video/mp4">
                                 Your browser does not support the video tag.
                             </video>
-                            <div class="video-controls">
-                                <button class="play-pause-btn">▶</button>
-                                <div class="video-progress">
-                                    <div class="progress-bar">
-                                        <div class="progress-fill"></div>
-                                    </div>
-                                    <div class="video-time">
-                                        <span class="current-time">0:00</span>
-                                        <span class="duration">0:00</span>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
                     `;
 
-                    // Add video player functionality
+                    // Add video progress tracking
                     const video = card.querySelector('video');
-                    const playPauseBtn = card.querySelector('.play-pause-btn');
-                    const progressFill = card.querySelector('.progress-fill');
-                    const currentTimeEl = card.querySelector('.current-time');
-                    const durationEl = card.querySelector('.duration');
-                    
-                    let isPlaying = false;
                     let progressTracked = false;
-
-                    // Format time function
-                    function formatTime(seconds) {
-                        const mins = Math.floor(seconds / 60);
-                        const secs = Math.floor(seconds % 60);
-                        return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
-                    }
-
-                    // Update progress bar and time
-                    video.addEventListener('loadedmetadata', () => {
-                        durationEl.textContent = formatTime(video.duration);
-                    });
 
                     video.addEventListener('timeupdate', () => {
                         const progress = (video.currentTime / video.duration) * 100;
-                        progressFill.style.width = `${progress}%`;
-                        currentTimeEl.textContent = formatTime(video.currentTime);
-
+                        
                         // Track progress when 80% watched
                         if (progress >= 80 && !progressTracked && !completedResources.has(resourceId)) {
                             progressTracked = true;
                             completedResources.add(resourceId);
                             updateVideoProgress(resourceId);
                         }
-                    });
-
-                    // Play/pause functionality
-                    playPauseBtn.addEventListener('click', () => {
-                        if (isPlaying) {
-                            video.pause();
-                            playPauseBtn.textContent = '▶';
-                        } else {
-                            video.play();
-                            playPauseBtn.textContent = '⏸';
-                        }
-                        isPlaying = !isPlaying;
-                    });
-
-                    // Reset when video ends
-                    video.addEventListener('ended', () => {
-                        isPlaying = false;
-                        playPauseBtn.textContent = '▶';
-                        progressFill.style.width = '100%';
-                        currentTimeEl.textContent = durationEl.textContent;
                     });
 
                     return card;
@@ -1310,7 +1258,8 @@
 
                     card.addEventListener('click', () => {
                         if (fileUrl) {
-                            openBookReader(title, fileUrl, resourceId);
+                            // Use Google Docs viewer as fallback due to CORS issues
+                            openBookReaderWithFallback(title, fileUrl, resourceId);
                         } else {
                             alert('No book file available.');
                         }
@@ -1385,7 +1334,7 @@
         // Track clicked resources to prevent multiple increments
         const completedResources = new Set();
 
-        // Book Reader functionality with PDF.js
+        // Book Reader functionality with PDF.js fallback
         const bookReader = document.getElementById('bookReader');
         const readerTitle = document.getElementById('readerTitle');
         const readerContent = document.getElementById('readerContent');
@@ -1395,44 +1344,78 @@
         const pageInfo = document.getElementById('pageInfo');
         const completionStatus = document.getElementById('completionStatus');
 
-        let currentPdf = null;
-        let currentPageNum = 1;
-        let totalPages = 1;
         let currentBookId = null;
         let progressTracked = false;
 
-        async function openBookReader(title, fileUrl, bookId) {
+        async function openBookReaderWithFallback(title, fileUrl, bookId) {
             currentBookId = bookId;
-            currentPageNum = 1;
             progressTracked = false;
             
             readerTitle.textContent = title;
-            readerContent.innerHTML = '<div class="loading">Loading PDF...</div>';
             completionStatus.textContent = '';
             
-            bookReader.classList.add('active');
-            
+            // Try PDF.js first, fallback to Google Docs viewer if CORS fails
             try {
-                // Load the PDF
-                const loadingTask = pdfjsLib.getDocument(fileUrl);
-                currentPdf = await loadingTask.promise;
-                totalPages = currentPdf.numPages;
+                readerContent.innerHTML = '<div class="loading">Loading PDF...</div>';
+                bookReader.classList.add('active');
                 
-                await renderPage(currentPageNum);
-                updatePageInfo();
+                const loadingTask = pdfjsLib.getDocument(fileUrl);
+                const pdf = await loadingTask.promise;
+                
+                // If we get here, PDF.js worked - set up the PDF reader
+                await setupPdfReader(pdf, fileUrl, bookId);
                 
             } catch (error) {
-                console.error('Error loading PDF:', error);
-                readerContent.innerHTML = '<div class="loading">Error loading PDF. Please try again.</div>';
+                console.log('PDF.js failed, falling back to Google Docs viewer:', error);
+                // Use Google Docs viewer as fallback
+                useGoogleDocsViewer(title, fileUrl, bookId);
             }
+        }
+
+        async function setupPdfReader(pdf, fileUrl, bookId) {
+            let currentPageNum = 1;
+            const totalPages = pdf.numPages;
             
-            // Event listeners
+            async function renderPage(pageNum) {
+                readerContent.innerHTML = '<div class="loading">Loading page...</div>';
+                
+                const page = await pdf.getPage(pageNum);
+                const viewport = page.getViewport({ scale: 1.5 });
+                
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                
+                const renderContext = {
+                    canvasContext: context,
+                    viewport: viewport
+                };
+                
+                await page.render(renderContext).promise;
+                
+                readerContent.innerHTML = '';
+                const container = document.createElement('div');
+                container.className = 'pdf-container';
+                container.appendChild(canvas);
+                canvas.className = 'pdf-page';
+                readerContent.appendChild(container);
+                
+                checkBookProgress(currentPageNum, totalPages);
+            }
+
+            function updatePageInfo() {
+                pageInfo.textContent = `Page ${currentPageNum} of ${totalPages}`;
+                prevPage.disabled = currentPageNum === 1;
+                nextPage.disabled = currentPageNum === totalPages;
+            }
+
+            // Event listeners for PDF navigation
             prevPage.onclick = async () => {
                 if (currentPageNum > 1) {
                     currentPageNum--;
                     await renderPage(currentPageNum);
                     updatePageInfo();
-                    checkBookProgress();
                 }
             };
             
@@ -1441,49 +1424,43 @@
                     currentPageNum++;
                     await renderPage(currentPageNum);
                     updatePageInfo();
-                    checkBookProgress();
                 }
             };
+
+            // Show page navigation for PDF
+            document.querySelector('.page-nav').style.display = 'flex';
+            
+            await renderPage(currentPageNum);
+            updatePageInfo();
         }
 
-        async function renderPage(pageNum) {
-            readerContent.innerHTML = '<div class="loading">Loading page...</div>';
+        function useGoogleDocsViewer(title, fileUrl, bookId) {
+            readerContent.innerHTML = `
+                <div style="width:100%; height:100%;">
+                    <iframe src="https://docs.google.com/gview?url=${encodeURIComponent(fileUrl)}&embedded=true" 
+                            style="width:100%; height:100%; border:none;"></iframe>
+                </div>
+            `;
+            bookReader.classList.add('active');
             
-            const page = await currentPdf.getPage(pageNum);
-            const viewport = page.getViewport({ scale: 1.5 });
+            // Hide page navigation for Google Docs viewer
+            document.querySelector('.page-nav').style.display = 'none';
             
-            const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d');
-            canvas.height = viewport.height;
-            canvas.width = viewport.width;
-            
-            const renderContext = {
-                canvasContext: context,
-                viewport: viewport
-            };
-            
-            await page.render(renderContext).promise;
-            
-            readerContent.innerHTML = '';
-            const container = document.createElement('div');
-            container.className = 'pdf-container';
-            container.appendChild(canvas);
-            canvas.className = 'pdf-page';
-            readerContent.appendChild(container);
-            
-            // Check progress after rendering
-            checkBookProgress();
+            // For Google Docs viewer, we'll track completion after a time delay
+            // since we can't track page progress
+            setTimeout(() => {
+                if (!progressTracked && !completedResources.has(bookId)) {
+                    progressTracked = true;
+                    completedResources.add(bookId);
+                    updateBookProgress(bookId);
+                    completionStatus.textContent = '✓ Completed!';
+                    completionStatus.style.color = 'green';
+                }
+            }, 30000); // Track as completed after 30 seconds of viewing
         }
 
-        function updatePageInfo() {
-            pageInfo.textContent = `Page ${currentPageNum} of ${totalPages}`;
-            prevPage.disabled = currentPageNum === 1;
-            nextPage.disabled = currentPageNum === totalPages;
-        }
-
-        function checkBookProgress() {
-            // Track progress when user reaches the last 20% of pages
-            const progress = (currentPageNum / totalPages) * 100;
+        function checkBookProgress(currentPage, totalPages) {
+            const progress = (currentPage / totalPages) * 100;
             
             if (progress >= 80 && !progressTracked && !completedResources.has(currentBookId)) {
                 progressTracked = true;
@@ -1499,10 +1476,7 @@
 
         closeReader.addEventListener('click', () => {
             bookReader.classList.remove('active');
-            if (currentPdf) {
-                currentPdf.destroy();
-                currentPdf = null;
-            }
+            readerContent.innerHTML = '';
         });
 
         // Function to update book progress
