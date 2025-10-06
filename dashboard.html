@@ -739,6 +739,94 @@
                 background: rgba(0,0,0,0.8);
             }
         }
+                /* --- Desktop Layout Enhancements --- */
+        @media (min-width: 1024px) {
+        
+            /* Allow scrolling and full width */
+            html, body {
+                overflow-x: hidden;
+                overflow-y: auto;
+                height: auto;
+            }
+        
+            body {
+                display: block;
+                background: linear-gradient(135deg, #FCE4EC 0%, #F3E5F5 50%, #E0F7FA 100%);
+                padding-bottom: 2rem;
+            }
+        
+            /* Header and nav alignment */
+            .header, .nav {
+                position: sticky;
+                top: 0;
+                width: 100%;
+                z-index: 100;
+            }
+        
+            /* Wider main container */
+            .container {
+                max-width: 1400px;
+                width: 90%;
+                margin: 0 auto;
+                padding: 2rem;
+                display: flex;
+                flex-direction: column;
+                gap: 2rem;
+            }
+        
+            /* Progress section: 3 cards side by side */
+            .progress-stats {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 2rem;
+            }
+        
+            /* Featured resources: 3 cards per row */
+            .featured-grid {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 2rem;
+            }
+        
+            /* Books, videos, and audio: 3–4 per row depending on width */
+            .content-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+                gap: 2rem;
+            }
+        
+            /* Course cards side by side */
+            #courses .content-grid {
+                grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            }
+        
+            /* Profile achievements and goals side by side */
+            #profile .progress-card {
+                width: 48%;
+            }
+            #profile .progress-card:nth-child(1) {
+                float: left;
+            }
+            #profile .progress-card:nth-child(2) {
+                float: right;
+            }
+            #profile::after {
+                content: "";
+                display: block;
+                clear: both;
+            }
+        
+            /* Improve card visual scaling */
+            .card, .book-card, .video-card, .audio-card, .course-card {
+                transition: transform 0.3s ease, box-shadow 0.3s ease;
+            }
+        
+            .card:hover, .book-card:hover, .video-card:hover, .audio-card:hover, .course-card:hover {
+                transform: translateY(-6px);
+                box-shadow: var(--shadow-lg);
+            }
+        }
+
     </style>
 </head>
 <body>
