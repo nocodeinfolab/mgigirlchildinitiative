@@ -831,6 +831,60 @@
         .video-card .card-content {
             padding: 0.8rem; /* reduce from 1.5rem */
         }
+        /* Lesson Modal Styles */
+        #lessonModal {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+        
+        .lesson-modal-content {
+            background: white;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 5px 30px rgba(0,0,0,0.3);
+        }
+        
+        .lesson-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--primary);
+            color: white;
+            padding: 1rem 1.5rem;
+        }
+        
+        .lesson-modal-body {
+            padding: 1.5rem;
+            background: #fafafa;
+            overflow-y: auto;
+        }
+        
+        #closeLessonModal {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.8rem;
+            cursor: pointer;
+        }
+        
+        .lesson-modal-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: transparent;
+        }
+
     </style>
 </head>
 <body>
@@ -1835,7 +1889,157 @@
             localStorage.removeItem('userRowId');
             window.location.href = 'index.html';
         });
+        async function loadCourses() {
+            const coursesContainer = document.querySelector('#courses .content-grid');
+            coursesContainer.innerHTML = '<p>Loading courses...</p>';
         
+            try {
+                const response = await fetch('https://mgi-login-worker.stevechikeabia.workers.dev/get_courses');
+                if (!response.ok) throw new Error('Failed to fetch courses');
+        
+                const courses = await response.json();
+                coursesContainer.innerHTML = ''; // clear placeholder
+        
+                if (!Array.isArray(courses) || courses.length === 0) {
+                    coursesContainer.innerHTML = '<p>No courses available.</p>';
+                    return;
+                }
+        
+                // Loop through each course record
+                courses.forEach(course => {
+                    const courseCard = document.createElement('div');
+                    courseCard.classList.add('course-card');
+        
+                    const courseName = course['Course Name'] || 'Untitled Course';
+                    const lessons = [];
+        
+                    // Collect all available lessons dynamically
+                    for (let i = 1; i <= 20; i++) {
+                        const lessonField = `Lesson ${i}`;
+                        if (course[lessonField] && course[lessonField].fileName && course[lessonField].fileUrl) {
+                            lessons.push(course[lessonField]);
+                        }
+                    }
+        
+                    // Build card layout
+                    courseCard.innerHTML = `
+                        <h3 class="card-title">${courseName}</h3>
+                        <p class="card-description">${lessons.length} lessons</p>
+                        <div class="course-progress">
+                            <small style="color: var(--text-light);">${lessons.length ? '0%' : 'No lessons'}</small>
+                            <div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div>
+                        </div>
+                        <ul class="lessons-list"></ul>
+                    `;
+        
+                    const lessonsList = courseCard.querySelector('.lessons-list');
+        
+                    // Create lesson list
+                    lessons.forEach((lesson, index) => {
+                        const li = document.createElement('li');
+                        li.classList.add('lesson-item');
+                        li.innerHTML = `
+                            <span>📘 ${lesson.fileName}</span>
+                            <div class="lesson-status"></div>
+                        `;
+        
+                        // When lesson clicked, open viewer
+                        li.addEventListener('click', () => {
+                            openLessonModal(courseName, lesson.fileName, lesson.fileUrl, li, courseCard);
+                        });
+        
+                        lessonsList.appendChild(li);
+                    });
+        
+                    coursesContainer.appendChild(courseCard);
+                });
+        
+            } catch (error) {
+                console.error('❌ Error loading courses:', error);
+                coursesContainer.innerHTML = '<p style="color:red;">Failed to load courses.</p>';
+            }
+        }
+        function openLessonModal(courseName, lessonTitle, fileUrl, lessonElement, courseCard) {
+            // Get or create modal
+            let modal = document.getElementById('lessonModal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'lessonModal';
+                modal.innerHTML = `
+                    <div class="lesson-modal-overlay"></div>
+                    <div class="lesson-modal-content">
+                        <div class="lesson-modal-header">
+                            <h2 id="lessonModalTitle"></h2>
+                            <button id="closeLessonModal">&times;</button>
+                        </div>
+                        <div id="lessonModalBody" class="lesson-modal-body"></div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+        
+                // Close modal handler
+                modal.querySelector('#closeLessonModal').addEventListener('click', closeLessonModal);
+                modal.querySelector('.lesson-modal-overlay').addEventListener('click', closeLessonModal);
+            }
+        
+            // Set title and open modal
+            document.getElementById('lessonModalTitle').textContent = lessonTitle;
+            const body = document.getElementById('lessonModalBody');
+            body.innerHTML = ''; // clear previous content
+            modal.style.display = 'flex';
+        
+            // Detect file type
+            if (fileUrl.endsWith('.mp4')) {
+                const video = document.createElement('video');
+                video.src = fileUrl;
+                video.controls = true;
+                video.autoplay = true;
+                video.style.width = '100%';
+                video.style.borderRadius = '12px';
+                body.appendChild(video);
+        
+                // Mark as completed when video finishes
+                video.addEventListener('ended', () => {
+                    markLessonCompleted(lessonElement, courseCard);
+                });
+        
+            } else if (fileUrl.endsWith('.pdf')) {
+                const iframe = document.createElement('iframe');
+                iframe.src = fileUrl;
+                iframe.style.width = '100%';
+                iframe.style.height = '80vh';
+                iframe.style.border = 'none';
+                body.appendChild(iframe);
+        
+                // Optional: mark completed when user views for 10s
+                setTimeout(() => markLessonCompleted(lessonElement, courseCard), 10000);
+            } else {
+                body.innerHTML = `<p>Unsupported file type: ${fileUrl}</p>`;
+            }
+        }
+        
+        function closeLessonModal() {
+            const modal = document.getElementById('lessonModal');
+            if (modal) modal.style.display = 'none';
+        }
+        
+        function markLessonCompleted(lessonElement, courseCard) {
+            lessonElement.querySelector('.lesson-status').classList.add('completed');
+            lessonElement.style.opacity = '0.7';
+            lessonElement.style.pointerEvents = 'none';
+        
+            // Update course progress
+            const completed = courseCard.querySelectorAll('.lesson-status.completed').length;
+            const total = courseCard.querySelectorAll('.lesson-item').length;
+            const progress = Math.round((completed / total) * 100);
+        
+            const bar = courseCard.querySelector('.progress-fill');
+            const label = courseCard.querySelector('.course-progress small');
+        
+            bar.style.width = `${progress}%`;
+            label.textContent = `${progress}% Complete`;
+        }
+
         // Tab Navigation
         const tabs = document.querySelectorAll('.nav-tab');
         const tabContents = document.querySelectorAll('.tab-content');
@@ -1856,6 +2060,10 @@
                     this.style.transform = '';
                 }, 200);
             });
+        });
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadResources();
+            await loadCourses();
         });
     </script>
 </body>
