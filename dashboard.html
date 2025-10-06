@@ -754,24 +754,20 @@
             }
         }
 
-        /* Fullscreen book reader on mobile */
-        @media (max-width: 768px) {
-            .book-reader {
-                padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-            }
-    
-            .reader-header {
-                padding: 1rem;
-            }
-    
-            .reader-content {
-                padding: 0;
-            }
-    
-            .pdf-page {
-                max-width: 100vw;
-                height: auto;
-            }
+        
+        .book-reader {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh; /* Use viewport height */
+            height: 100dvh; /* Dynamic viewport height for mobile browsers */
+            background: white;
+            z-index: 1000;
+            flex-direction: column;
+            padding: 0;
+            margin: 0;
         }
     </style>
 </head>
