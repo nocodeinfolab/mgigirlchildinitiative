@@ -983,95 +983,12 @@
                 <!-- Dynamic audio cards will be appended here by JS -->
             </div>
         </div>
-
+        
         <!-- Courses Tab -->
         <div class="tab-content" id="courses">
             <h2 class="section-title">🎓 Learning Paths</h2>
             <div class="content-grid">
-                <div class="course-card">
-                    <h3 class="card-title">Digital Literacy Basics</h3>
-                    <p class="card-description">5 lessons • 2 hours</p>
-                    <div class="course-progress">
-                        <small style="color: var(--text-light);">60% Complete</small>
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: 60%"></div>
-                        </div>
-                    </div>
-                    <ul class="lessons-list">
-                        <li class="lesson-item">
-                            <span>📝 Introduction to Digital World</span>
-                            <div class="lesson-status completed"></div>
-                        </li>
-                        <li class="lesson-item">
-                            <span>🔒 Internet Safety</span>
-                            <div class="lesson-status completed"></div>
-                        </li>
-                        <li class="lesson-item">
-                            <span>📄 Creating Documents</span>
-                            <div class="lesson-status completed"></div>
-                        </li>
-                        <li class="lesson-item">
-                            <span>📧 Email Etiquette</span>
-                            <div class="lesson-status"></div>
-                        </li>
-                        <li class="lesson-item">
-                            <span>💻 Online Collaboration</span>
-                            <div class="lesson-status"></div>
-                        </li>
-                    </ul>
-                </div>
-                <div class="course-card">
-                    <h3 class="card-title">Web Development Fundamentals</h3>
-                    <p class="card-description">4 lessons • 3 hours</p>
-                    <div class="course-progress">
-                        <small style="color: var(--text-light);">25% Complete</small>
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: 25%"></div>
-                        </div>
-                    </div>
-                    <ul class="lessons-list">
-                        <li class="lesson-item">
-                            <span>🌐 What is the Web?</span>
-                            <div class="lesson-status completed"></div>
-                        </li>
-                        <li class="lesson-item">
-                            <span>📝 HTML Basics</span>
-                            <div class="lesson-status"></div>
-                        </li>
-                        <li class="lesson-item">
-                            <span>🎨 CSS Styling</span>
-                            <div class="lesson-status"></div>
-                        </li>
-                        <li class="lesson-item">
-                            <span>⚡ JavaScript Intro</span>
-                            <div class="lesson-status"></div>
-                        </li>
-                    </ul>
-                </div>
-                <div class="course-card">
-                    <h3 class="card-title">Entrepreneurship Essentials</h3>
-                    <p class="card-description">6 lessons • 4 hours</p>
-                    <div class="course-progress">
-                        <small style="color: var(--text-light);">0% Complete</small>
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: 0%"></div>
-                        </div>
-                    </div>
-                    <ul class="lessons-list">
-                        <li class="lesson-item">
-                            <span>💡 Identifying Opportunities</span>
-                            <div class="lesson-status"></div>
-                        </li>
-                        <li class="lesson-item">
-                            <span>📋 Business Planning</span>
-                            <div class="lesson-status"></div>
-                        </li>
-                        <li class="lesson-item">
-                            <span>💰 Financial Management</span>
-                            <div class="lesson-status"></div>
-                        </li>
-                    </ul>
-                </div>
+                <!-- Dynamic course cards will be loaded here by loadCourses() -->
             </div>
         </div>
 
@@ -1079,8 +996,8 @@
         <div class="tab-content" id="profile">
             <div class="profile-header">
                 <div class="profile-avatar">👩‍🎓</div>
-                <h2>MaryWhite Ewona</h2>
-                <p>Member since January 2025</p>
+                <h2></h2>
+                <p></p>
             </div>
             
             <div class="progress-card">
@@ -1202,6 +1119,24 @@
                 const city = user['City'] || '—';
                 const dob = user['Date of Birth'] || '—';
                 const email = user['Email'] || '';
+                const fullName = user['Full Name'] || `${firstName} ${lastName}`.trim() || 'User';
+                const dateCreated = user['Date Created'] || '';
+
+                let memberSince = 'Unknown';
+                if (dateCreated) {
+                    const dateParts = dateCreated.split('/');
+                    if (dateParts.length === 3) {
+                        const monthIndex = parseInt(dateParts[1]) - 1; // months are 0-indexed
+                        const year = dateParts[2];
+                        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                                          'July', 'August', 'September', 'October', 'November', 'December'];
+                        memberSince = `${monthNames[monthIndex]} ${year}`;
+                    }
+                }
+                
+                // Update profile header
+                document.querySelector('.profile-header h2').textContent = fullName;
+                document.querySelector('.profile-header p').textContent = `Member since ${memberSince}`;
 
                 welcomeName.textContent = `Welcome back, ${firstName}! ✨`;
                 
