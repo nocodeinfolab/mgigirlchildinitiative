@@ -1977,59 +1977,67 @@
                 `;
                 document.body.appendChild(modal);
         
-                // Close modal handler
+                // Close handlers
                 modal.querySelector('#closeLessonModal').addEventListener('click', closeLessonModal);
                 modal.querySelector('.lesson-modal-overlay').addEventListener('click', closeLessonModal);
             }
         
-            // Set title and open modal
-            document.getElementById('lessonModalTitle').textContent = lessonTitle;
+            // Always reset modal body before showing new content
             const body = document.getElementById('lessonModalBody');
-            body.innerHTML = ''; // clear previous content
+            body.innerHTML = ''; // important: clear old video or iframe
+        
+            // Update title and show modal
+            document.getElementById('lessonModalTitle').textContent = lessonTitle;
             modal.style.display = 'flex';
         
             // Detect file type
             if (fileUrl.endsWith('.mp4')) {
+                // Create a fresh video element each time
+                const videoContainer = document.createElement('div');
+                videoContainer.style.position = 'relative';
+        
                 const video = document.createElement('video');
                 video.src = fileUrl;
                 video.controls = true;
                 video.autoplay = true;
                 video.style.width = '100%';
                 video.style.borderRadius = '12px';
-                body.appendChild(video);
         
-                // Mark as completed when video finishes
+                videoContainer.appendChild(video);
+                body.appendChild(videoContainer);
+        
+                // When video ends, mark completed and show replay overlay
                 video.addEventListener('ended', () => {
                     markLessonCompleted(lessonElement, courseCard);
-                
-                    // Add replay overlay
+        
                     const replayBtn = document.createElement('button');
                     replayBtn.textContent = 'Replay Lesson';
-                    replayBtn.style.position = 'absolute';
-                    replayBtn.style.top = '50%';
-                    replayBtn.style.left = '50%';
-                    replayBtn.style.transform = 'translate(-50%, -50%)';
-                    replayBtn.style.background = 'rgba(0,0,0,0.6)';
-                    replayBtn.style.color = '#fff';
-                    replayBtn.style.border = 'none';
-                    replayBtn.style.padding = '10px 20px';
-                    replayBtn.style.borderRadius = '8px';
-                    replayBtn.style.cursor = 'pointer';
-                    replayBtn.style.fontWeight = 'bold';
-                    replayBtn.style.zIndex = '5';
-                
+                    Object.assign(replayBtn.style, {
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        background: 'rgba(0,0,0,0.6)',
+                        color: '#fff',
+                        border: 'none',
+                        padding: '10px 20px',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontWeight: 'bold',
+                        zIndex: '5'
+                    });
+        
                     replayBtn.addEventListener('click', () => {
                         video.currentTime = 0;
                         video.play();
                         replayBtn.remove();
                     });
-                
-                    body.style.position = 'relative';
-                    body.appendChild(replayBtn);
-                });
-
         
-            } else if (fileUrl.endsWith('.pdf')) {
+                    videoContainer.appendChild(replayBtn);
+                });
+            } 
+            
+            else if (fileUrl.endsWith('.pdf')) {
                 const iframe = document.createElement('iframe');
                 iframe.src = fileUrl;
                 iframe.style.width = '100%';
@@ -2037,34 +2045,24 @@
                 iframe.style.border = 'none';
                 body.appendChild(iframe);
         
-                // Optional: mark completed when user views for 10s
+                // Optional: mark completed after 10s
                 setTimeout(() => markLessonCompleted(lessonElement, courseCard), 10000);
-            } else {
+            } 
+            
+            else {
                 body.innerHTML = `<p>Unsupported file type: ${fileUrl}</p>`;
             }
         }
         
         function closeLessonModal() {
             const modal = document.getElementById('lessonModal');
-            if (modal) modal.style.display = 'none';
+            if (modal) {
+                modal.style.display = 'none';
+                const body = document.getElementById('lessonModalBody');
+                if (body) body.innerHTML = ''; // clear old video for next time
+            }
         }
-        
-        function markLessonCompleted(lessonElement, courseCard) {
-            lessonElement.querySelector('.lesson-status').classList.add('completed');
-            lessonElement.style.opacity = '0.7';
-            lessonElement.style.pointerEvents = 'none';
-        
-            // Update course progress
-            const completed = courseCard.querySelectorAll('.lesson-status.completed').length;
-            const total = courseCard.querySelectorAll('.lesson-item').length;
-            const progress = Math.round((completed / total) * 100);
-        
-            const bar = courseCard.querySelector('.progress-fill');
-            const label = courseCard.querySelector('.course-progress small');
-        
-            bar.style.width = `${progress}%`;
-            label.textContent = `${progress}% Complete`;
-        }
+
 
         // Tab Navigation
         const tabs = document.querySelectorAll('.nav-tab');
