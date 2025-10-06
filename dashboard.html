@@ -420,12 +420,14 @@
             box-shadow: var(--shadow);
             min-height: 44px;
             transition: all 0.3s ease;
+            height: fit-content; /* Let content determine height */
         }
         
         .video-card-content {
             display: flex;
             flex-direction: column;
             height: 100%;
+            min-height: 350px; /* Set a consistent minimum height */
         }
         
         .video-card-text {
@@ -436,14 +438,8 @@
         .video-player {
             height: 200px;
             position: relative;
-            flex-grow: 1;
+            flex-shrink: 0; /* Don't allow shrinking */
             transition: all 0.3s ease;
-        }
-        
-        .video-player.expanded {
-            height: 100%;
-            margin: 0;
-            border-radius: 15px;
         }
         
         .video-thumbnail {
@@ -471,32 +467,38 @@
             height: 100%;
             object-fit: cover;
             background: black;
-            border-radius: 0 0 15px 15px;
         }
         
-        /* When video is loaded and text is hidden */
-        .video-card.video-expanded .video-card-text {
-            display: none;
+        /* Ensure consistent card sizes in grid */
+        .content-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
         }
         
-        .video-card.video-expanded .video-player {
-            height: 100%;
-            margin: 0;
-            border-radius: 15px;
-        }
-        
-        .video-card.video-expanded .video-player video {
-            border-radius: 15px;
+        .video-card {
+            height: 100%; /* Make cards equal height in grid */
         }
         
         /* Responsive adjustments */
         @media (max-width: 768px) {
-            .video-card.video-expanded {
-                min-height: 250px;
+            .video-card-content {
+                min-height: 300px;
             }
             
             .video-player {
                 height: 180px;
+            }
+        }
+        
+        /* Desktop enhancements */
+        @media (min-width: 1024px) {
+            .video-card-content {
+                min-height: 380px;
+            }
+            
+            .video-player {
+                height: 220px;
             }
         }
 
@@ -1560,17 +1562,19 @@
             const thumbnail = card.querySelector('.video-thumbnail');
             const textContent = card.querySelector('.video-card-text');
             
-            // Remove thumbnail and hide text content
-            thumbnail.style.display = 'none';
+            // Store original card height for reference
+            const originalCardHeight = card.offsetHeight;
+            
+            // Hide text content and thumbnail
             if (textContent) {
                 textContent.style.display = 'none';
             }
+            thumbnail.style.display = 'none';
             
-            // Expand video container to fill the card
-            videoContainer.style.margin = '0';
-            videoContainer.style.borderRadius = '15px';
+            // Expand video container to fill the entire card
             videoContainer.style.height = '100%';
-            videoContainer.style.minHeight = '300px'; // Ensure minimum height
+            videoContainer.style.minHeight = '250px'; // Ensure reasonable minimum
+            videoContainer.style.flexGrow = '1';
             
             // Create and insert video element
             const video = document.createElement('video');
@@ -1597,6 +1601,8 @@
                 }
             });
             
+            videoContainer.appendChild(video);
+            
             // Auto-play the video when loaded
             video.addEventListener('loadeddata', () => {
                 video.play().catch(e => {
@@ -1604,10 +1610,11 @@
                 });
             });
             
-            videoContainer.appendChild(video);
-            
-            // Adjust card height for better video display
-            card.style.minHeight = '300px';
+            // Add a subtle scale effect to show the card is now video-focused
+            card.style.transform = 'scale(1.02)';
+            setTimeout(() => {
+                card.style.transform = 'scale(1)';
+            }, 300);
         }
         // Helper function to create an audio card with player controls
         function createAudioCard({ topic, description, author, image, file, resourceType, featured, resourceId }) {
