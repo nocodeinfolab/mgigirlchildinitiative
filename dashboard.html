@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -34,11 +33,20 @@
             --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.15);
         }
 
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #FCE4EC 0%, #F3E5F5 50%, #E0F7FA 100%);
             min-height: 100vh;
             color: var(--text-dark);
+            display: flex;
+            flex-direction: column;
         }
 
         /* Header */
@@ -46,10 +54,12 @@
             background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
             color: white;
             padding: 1rem 2rem;
+            padding-top: calc(1rem + env(safe-area-inset-top));
             box-shadow: var(--shadow-lg);
             position: sticky;
             top: 0;
             z-index: 100;
+            flex-shrink: 0;
         }
 
         .header-content {
@@ -83,15 +93,6 @@
             font-weight: bold;
         }
 
-        .menu-toggle {
-            display: none;
-            background: none;
-            border: none;
-            color: white;
-            font-size: 1.5rem;
-            cursor: pointer;
-        }
-
         /* Navigation */
         .nav {
             background: white;
@@ -99,6 +100,7 @@
             position: sticky;
             top: 82px;
             z-index: 99;
+            flex-shrink: 0;
         }
 
         .nav-content {
@@ -112,6 +114,7 @@
             gap: 1rem;
             list-style: none;
             overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
         .nav-tabs::-webkit-scrollbar {
@@ -130,6 +133,9 @@
             transition: all 0.3s;
             white-space: nowrap;
             font-weight: 500;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
         }
 
         .nav-tab:hover {
@@ -147,6 +153,10 @@
             max-width: 1400px;
             margin: 0 auto;
             padding: 2rem;
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: calc(2rem + env(safe-area-inset-bottom));
         }
 
         /* Welcome Section */
@@ -172,6 +182,7 @@
         /* Tab Content */
         .tab-content {
             display: none;
+            height: 100%;
         }
 
         .tab-content.active {
@@ -211,6 +222,7 @@
             box-shadow: var(--shadow);
             transition: transform 0.3s, box-shadow 0.3s;
             cursor: pointer;
+            min-height: 44px;
         }
 
         .card:hover {
@@ -303,6 +315,8 @@
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 1.5rem;
+            flex: 1;
+            min-height: 0;
         }
 
         /* Video Card */
@@ -311,6 +325,7 @@
             border-radius: 15px;
             overflow: hidden;
             box-shadow: var(--shadow);
+            min-height: 44px;
         }
 
         .video-player {
@@ -324,6 +339,23 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
+        }
+
+        .video-thumbnail {
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--secondary) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .video-thumbnail::after {
+            content: '▶';
+            font-size: 3rem;
+            color: white;
         }
 
         .video-controls {
@@ -390,6 +422,7 @@
             border-radius: 15px;
             overflow: hidden;
             box-shadow: var(--shadow);
+            min-height: 44px;
         }
 
         .audio-thumbnail {
@@ -435,6 +468,7 @@
             overflow: hidden;
             box-shadow: var(--shadow);
             cursor: pointer;
+            min-height: 44px;
         }
 
         /* Book Reader with PDF.js */
@@ -443,8 +477,9 @@
             position: fixed;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
+            width: 100vw;
+            height: 100vh;
+            height: 100dvh;
             background: white;
             z-index: 1000;
             flex-direction: column;
@@ -457,17 +492,22 @@
         .reader-header {
             background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
             color: white;
-            padding: 1rem 2rem;
+            padding: 1rem;
+            padding-top: calc(1rem + env(safe-area-inset-top));
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-shrink: 0;
+            min-height: 60px;
         }
 
         .reader-content {
             flex: 1;
             overflow-y: auto;
             background: #f5f5f5;
-            position: relative;
+            height: auto;
+            min-height: 0;
+            -webkit-overflow-scrolling: touch;
         }
 
         .pdf-container {
@@ -483,11 +523,14 @@
 
         .reader-controls {
             background: var(--light-pink);
-            padding: 1rem 2rem;
+            padding: 1rem;
+            padding-bottom: calc(1rem + env(safe-area-inset-bottom));
             display: flex;
             justify-content: space-between;
             align-items: center;
             border-top: 1px solid var(--light-purple);
+            flex-shrink: 0;
+            min-height: 60px;
         }
 
         .page-nav {
@@ -504,6 +547,7 @@
             border-radius: 5px;
             cursor: pointer;
             font-weight: bold;
+            min-height: 44px;
         }
 
         .nav-btn:disabled {
@@ -519,6 +563,7 @@
             border-radius: 5px;
             cursor: pointer;
             font-weight: bold;
+            min-height: 44px;
         }
 
         .loading {
@@ -526,6 +571,22 @@
             padding: 2rem;
             font-size: 1.2rem;
             color: var(--text-light);
+        }
+
+        /* Load More Button */
+        .load-more-btn {
+            grid-column: 1 / -1;
+            padding: 1rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin: 1rem auto;
+            display: block;
+            width: 200px;
+            min-height: 44px;
         }
 
         /* Course Card */
@@ -555,6 +616,7 @@
             align-items: center;
             cursor: pointer;
             transition: all 0.3s;
+            min-height: 44px;
         }
 
         .lesson-item:hover {
@@ -624,10 +686,12 @@
 
             .container {
                 padding: 1rem;
+                padding-bottom: calc(1rem + env(safe-area-inset-bottom));
             }
 
             .welcome {
                 padding: 1.5rem;
+                margin: 0.5rem;
             }
 
             .welcome h1 {
@@ -645,6 +709,8 @@
             .featured-grid,
             .content-grid {
                 grid-template-columns: 1fr;
+                gap: 1rem;
+                margin: 0 0.5rem;
             }
 
             .nav {
@@ -660,8 +726,7 @@
             }
 
             .reader-content {
-                padding: 1rem;
-                font-size: 1rem;
+                padding: 0;
             }
 
             .reader-header,
@@ -673,174 +738,10 @@
                 max-width: 100%;
                 height: auto;
             }
-        }
-        /* Fullscreen mobile enhancements */
-        html, body {
-            height: 100%;
-            overflow-x: hidden;
-        }
 
-        body {
-            /* Prevent pull-to-refresh on mobile */
-            overscroll-behavior-y: none;
-        }
-
-        /* Safe area insets for notched phones */
-        .header {
-            padding-top: env(safe-area-inset-top);
-            padding-bottom: 1rem;
-        }
-
-        .container {
-            padding-bottom: env(safe-area-inset-bottom);
-        }
-
-        /* Better touch targets for mobile */
-        .nav-tab {
-            min-height: 44px; /* Apple's recommended minimum touch target */
-            display: flex;
-            align-items: center;
-        }
-
-        .card, .video-card, .audio-card, .book-card, .lesson-item {
-            min-height: 44px;
-        }
-
-        /* Mobile-specific improvements */
-        @media (max-width: 768px) {
-            .container {
-                padding: 0.5rem;
-            }
-    
-            .welcome {
-                margin: 0.5rem;
-                border-radius: 15px;
-            }
-    
-            .progress-card, .featured {
-                margin: 1rem 0.5rem;
-            }
-    
-            /* Better scrolling for mobile */
-            .nav-tabs {
-                -webkit-overflow-scrolling: touch;
-            }
-    
-            /* Full-width cards on mobile */
-            .featured-grid,
-            .content-grid {
-                grid-template-columns: 1fr;
-                gap: 1rem;
-                margin: 0 0.5rem;
-            }
-    
-            /* Better video player on mobile */
-            .video-player video {
-                object-fit: contain;
-                background: #000;
-            }
-    
-            /* Always show controls on mobile */
             .video-controls {
-                opacity: 1 !important;
+                opacity: 1;
                 background: rgba(0,0,0,0.8);
-            }
-        }
-
-        /* Prevent zoom on input focus for iOS */
-        @media (max-width: 768px) {
-            input, select, textarea {
-                font-size: 16px; /* Prevents zoom on focus in iOS */
-            }
-        }
-
-        
-        /* Fullscreen book reader */
-       .book-reader {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            height: 100dvh;
-            background: white;
-            z-index: 1000;
-            flex-direction: column;
-        }
-        
-        .book-reader.active {
-            display: flex;
-        }
-        
-        .reader-header {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            color: white;
-            padding: 1rem;
-            padding-top: calc(1rem + env(safe-area-inset-top));
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-shrink: 0;
-            min-height: 60px;
-        }
-        
-        /* THIS IS THE KEY PART - Make the content area full height */
-        .reader-content {
-            flex: 1;
-            overflow-y: auto;
-            background: #f5f5f5;
-            height: auto; /* Let flexbox handle the height */
-            min-height: 0; /* Important for flex children */
-            -webkit-overflow-scrolling: touch;
-        }
-        
-        .reader-controls {
-            background: var(--light-pink);
-            padding: 1rem;
-            padding-bottom: calc(1rem + env(safe-area-inset-bottom));
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-top: 1px solid var(--light-purple);
-            flex-shrink: 0;
-            min-height: 60px;
-        }
-        
-        /* PDF container should fill the content area */
-        .pdf-container {
-            min-height: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-start;
-            padding: 20px;
-        }
-        
-        .pdf-page {
-            margin: 10px auto;
-            box-shadow: 0 0 10px rgba(0,0,0,0.2);
-            display: block;
-            max-width: 100%;
-            height: auto;
-        }
-        
-        /* Mobile optimization */
-        @media (max-width: 768px) {
-            .reader-content {
-                /* On mobile, ensure it uses all available space */
-                height: 100%;
-            }
-            
-            .pdf-container {
-                padding: 10px;
-                min-height: calc(100vh - 120px);
-                min-height: calc(100dvh - 120px);
-            }
-            
-            .pdf-page {
-                max-width: 100%;
-                height: auto;
             }
         }
     </style>
@@ -861,6 +762,7 @@
                 border-radius: 5px;
                 font-weight: bold;
                 cursor: pointer;
+                min-height: 44px;
             ">Logout</button>
         </div>
     </header>
@@ -1105,6 +1007,12 @@
         // Set PDF.js worker path
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
+        // Global variables for resource management
+        const completedResources = new Set();
+        let allVideoResources = [];
+        let currentVideoPage = 1;
+        const videosPerPage = 12;
+
         document.addEventListener('DOMContentLoaded', async () => {
             const rowId = localStorage.getItem('userRowId');
             const email = localStorage.getItem('userEmail');
@@ -1160,18 +1068,19 @@
                 welcomeName.textContent = 'Error loading profile 😞';
                 userDetails.textContent = 'Please try again later.';
             }
+
+            // Load resources
+            await loadResources();
         });
         
         // --- Fetch resources for Books, Videos and Audio ---
         async function loadResources() {
             const booksContainer = document.querySelector('#books .content-grid');
-            const videosContainer = document.querySelector('#videos .content-grid');
             const audioContainer = document.querySelector('#audio .content-grid');
             const featuredContainer = document.querySelector('.featured-grid');
 
             // Clear existing placeholder cards
             booksContainer.innerHTML = '';
-            videosContainer.innerHTML = '';
             audioContainer.innerHTML = '';
             featuredContainer.innerHTML = '';
 
@@ -1182,280 +1091,24 @@
                 const resources = await response.json();
                 console.log('✅ Resources fetched:', resources);
 
-                // Helper function to create a featured/book card
-                function createCard({ topic, description, author, image, file, resourceType, featured, resourceId }) {
-                    const imageUrl = Array.isArray(image) && image.length > 0
-                        ? image[0].url
-                        : 'https://via.placeholder.com/300x200?text=No+Image';
-                    const fileUrl = Array.isArray(file) && file.length > 0 ? file[0].url : '';
-                    const type = resourceType || 'Book';
-                    const title = topic || 'Untitled';
-                    const desc = description || 'No description available.';
-                    const writer = author || 'Unknown Author';
+                // Separate videos for pagination
+                allVideoResources = resources.filter(r => r.resourceType === 'Video');
+                
+                // Load first page of videos
+                loadVideoPage(1);
 
-                    const card = document.createElement('div');
-                    card.classList.add('card');
-
-                    // Determine featured tag
-                    let tagLabel = '';
-                    if (featured && featured.toLowerCase().includes('featured')) {
-                        if (type === 'Video') tagLabel = 'POPULAR VIDEO';
-                        else if (type === 'Book') tagLabel = 'FEATURED BOOK';
-                        else if (type === 'Audio') tagLabel = 'FEATURED AUDIO';
-                        else tagLabel = 'FEATURED RESOURCE';
-                    }
-
-                    card.innerHTML = `
-                        <div class="card-image">
-                            <img src="${imageUrl}" alt="${title}" style="width:100%; height:100%; object-fit:cover;">
-                        </div>
-                        <div class="card-content">
-                            ${tagLabel ? `<span class="card-tag">${tagLabel}</span>` : ''}
-                            <h3 class="card-title">${title}</h3>
-                            <p class="card-description">${desc}</p>
-                            <small>By ${writer}</small>
-                        </div>
-                    `;
-
-                    card.addEventListener('click', () => {
-                        if (fileUrl) {
-                            if (type === 'Book') {
-                                openBookReader(title, fileUrl, resourceId);
-                            } else if (type === 'Video') {
-                                // Videos are handled by the video player cards
-                                return;
-                            }
-                        } else {
-                            alert('No resource available to open.');
-                        }
-                    });
-
-                    return card;
-                }
-
-                // Helper function to create a video card with player
-                function createVideoCard({ topic, description, author, image, file, resourceType, featured, resourceId }) {
-                    const imageUrl = Array.isArray(image) && image.length > 0
-                        ? image[0].url
-                        : 'https://via.placeholder.com/300x200?text=No+Image';
-                    const fileUrl = Array.isArray(file) && file.length > 0 ? file[0].url : '';
-                    const type = resourceType || 'Video';
-                    const title = topic || 'Untitled';
-                    const desc = description || 'No description available.';
-                    const writer = author || 'Unknown Author';
-
-                    const card = document.createElement('div');
-                    card.classList.add('video-card');
-
-                    // Determine featured tag
-                    let tagLabel = '';
-                    if (featured && featured.toLowerCase().includes('featured')) {
-                        tagLabel = 'FEATURED VIDEO';
-                    }
-
-                    card.innerHTML = `
-                        <div class="card-content">
-                            ${tagLabel ? `<span class="card-tag">${tagLabel}</span>` : ''}
-                            <h3 class="card-title">${title}</h3>
-                            <p class="card-description">${desc}</p>
-                            <small>By ${writer}</small>
-                        </div>
-                        <div class="video-player">
-                            <video controls>
-                                <source src="${fileUrl}" type="video/mp4">
-                                Your browser does not support the video tag.
-                            </video>
-                        </div>
-                    `;
-
-                    // Add video progress tracking
-                    const video = card.querySelector('video');
-                    let progressTracked = false;
-
-                    video.addEventListener('timeupdate', () => {
-                        const progress = (video.currentTime / video.duration) * 100;
-                        
-                        // Track progress when 80% watched
-                        if (progress >= 80 && !progressTracked && !completedResources.has(resourceId)) {
-                            progressTracked = true;
-                            completedResources.add(resourceId);
-                            updateVideoProgress(resourceId);
-                        }
-                    });
-
-                    return card;
-                }
-
-                // Helper function to create an audio card with player controls
-                function createAudioCard({ topic, description, author, image, file, resourceType, featured, resourceId }) {
-                    const imageUrl = Array.isArray(image) && image.length > 0
-                        ? image[0].url
-                        : 'https://via.placeholder.com/300x200?text=No+Image';
-                    const fileUrl = Array.isArray(file) && file.length > 0 ? file[0].url : '';
-                    const type = resourceType || 'Audio';
-                    const title = topic || 'Untitled';
-                    const desc = description || 'No description available.';
-                    const writer = author || 'Unknown Author';
-
-                    const card = document.createElement('div');
-                    card.classList.add('audio-card');
-
-                    // Determine featured tag
-                    let tagLabel = '';
-                    if (featured && featured.toLowerCase().includes('featured')) {
-                        tagLabel = 'FEATURED AUDIO';
-                    }
-
-                    card.innerHTML = `
-                        <div class="audio-thumbnail">
-                            <div class="audio-icon">🎵</div>
-                        </div>
-                        <div class="card-content">
-                            ${tagLabel ? `<span class="card-tag">${tagLabel}</span>` : ''}
-                            <h3 class="card-title">${title}</h3>
-                            <p class="card-description">${desc}</p>
-                            <small>By ${writer}</small>
-                        </div>
-                        <div class="audio-controls">
-                            <button class="play-pause-btn" style="
-                                background: var(--primary);
-                                color: white;
-                                border: none;
-                                border-radius: 50%;
-                                width: 40px;
-                                height: 40px;
-                                display: flex;
-                                align-items: center;
-                                justify-content: center;
-                                cursor: pointer;
-                            ">▶</button>
-                            <div class="audio-progress">
-                                <div class="progress-bar">
-                                    <div class="progress-fill" style="width: 0%"></div>
-                                </div>
-                                <div class="audio-time">
-                                    <span class="current-time">0:00</span>
-                                    <span class="duration">0:00</span>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-
-                    // Add audio player functionality
-                    const playPauseBtn = card.querySelector('.play-pause-btn');
-                    const progressFill = card.querySelector('.progress-fill');
-                    const currentTimeEl = card.querySelector('.current-time');
-                    const durationEl = card.querySelector('.duration');
-                    
-                    const audio = new Audio(fileUrl);
-                    let isPlaying = false;
-                    let progressTracked = false;
-
-                    // Format time function
-                    function formatTime(seconds) {
-                        const mins = Math.floor(seconds / 60);
-                        const secs = Math.floor(seconds % 60);
-                        return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
-                    }
-
-                    // Update progress bar and time
-                    audio.addEventListener('loadedmetadata', () => {
-                        durationEl.textContent = formatTime(audio.duration);
-                    });
-
-                    audio.addEventListener('timeupdate', () => {
-                        const progress = (audio.currentTime / audio.duration) * 100;
-                        progressFill.style.width = `${progress}%`;
-                        currentTimeEl.textContent = formatTime(audio.currentTime);
-
-                        // Track progress when 80% listened
-                        if (progress >= 80 && !progressTracked && !completedResources.has(resourceId)) {
-                            progressTracked = true;
-                            completedResources.add(resourceId);
-                            updateAudioProgress(resourceId);
-                        }
-                    });
-
-                    // Play/pause functionality
-                    playPauseBtn.addEventListener('click', () => {
-                        if (isPlaying) {
-                            audio.pause();
-                            playPauseBtn.textContent = '▶';
-                        } else {
-                            audio.play();
-                            playPauseBtn.textContent = '⏸';
-                        }
-                        isPlaying = !isPlaying;
-                    });
-
-                    // Reset when audio ends
-                    audio.addEventListener('ended', () => {
-                        isPlaying = false;
-                        playPauseBtn.textContent = '▶';
-                        progressFill.style.width = '100%';
-                        currentTimeEl.textContent = durationEl.textContent;
-                    });
-
-                    return card;
-                }
-
-                // Helper function to create a book card
-                function createBookCard({ topic, description, author, image, file, resourceType, featured, resourceId }) {
-                    const imageUrl = Array.isArray(image) && image.length > 0 ? image[0].url : 'https://via.placeholder.com/300x200?text=No+Image';
-                    const fileUrl = Array.isArray(file) && file.length > 0 ? file[0].url : '';
-                    const type = resourceType || 'Book';
-                    const title = topic || 'Untitled';
-                    const desc = description || 'No description available.';
-                    const writer = author || 'Unknown Author';
-
-                    const card = document.createElement('div');
-                    card.classList.add('book-card');
-
-                    // Determine featured tag
-                    let tagLabel = '';
-                    if (featured && featured.toLowerCase().includes('featured')) {
-                        tagLabel = 'FEATURED BOOK';
-                    }
-
-                    card.innerHTML = `
-                        <div class="card-image">
-                            <img src="${imageUrl}" alt="${title}" style="width:100%; height:100%; object-fit:cover;">
-                        </div>
-                        <div class="card-content">
-                            ${tagLabel ? `<span class="card-tag">${tagLabel}</span>` : ''}
-                            <h3 class="card-title">${title}</h3>
-                            <p class="card-description">${desc}</p>
-                            <small>By ${writer}</small>
-                        </div>
-                    `;
-
-                    card.addEventListener('click', () => {
-                        if (fileUrl) {
-                            // Use Google Docs viewer as fallback due to CORS issues
-                            openBookReaderWithFallback(title, fileUrl, resourceId);
-                        } else {
-                            alert('No book file available.');
-                        }
-                    });
-
-                    return card;
-                }
-
-                // Separate featured, books, videos, and audio
-                const featuredResources = resources.filter(r =>
-                    r.featured && r.featured.toLowerCase().includes('featured')
-                );
+                // Load other resources
                 const bookResources = resources.filter(r => r.resourceType === 'Book');
-                const videoResources = resources.filter(r => r.resourceType === 'Video');
                 const audioResources = resources.filter(r => r.resourceType === 'Audio');
+                const featuredResources = resources.filter(r => r.featured && r.featured.toLowerCase().includes('featured'));
 
-                // Limit featured to 3 (optional)
+                // Limit featured to 3
                 const limitedFeatured = featuredResources.slice(0, 3);
 
                 // Add featured cards
                 if (limitedFeatured.length > 0) {
                     limitedFeatured.forEach(resource => {
-                        const card = createCard(resource);
+                        const card = createFeaturedCard(resource);
                         featuredContainer.appendChild(card);
                     });
                 } else {
@@ -1472,16 +1125,6 @@
                     booksContainer.innerHTML = '<p>No books available.</p>';
                 }
 
-                // Add video cards
-                if (videoResources.length > 0) {
-                    videoResources.forEach(resource => {
-                        const card = createVideoCard(resource);
-                        videosContainer.appendChild(card);
-                    });
-                } else {
-                    videosContainer.innerHTML = '<p>No videos available.</p>';
-                }
-
                 // Add audio cards
                 if (audioResources.length > 0) {
                     audioResources.forEach(resource => {
@@ -1495,17 +1138,377 @@
             } catch (error) {
                 console.error('❌ Error loading resources:', error);
                 booksContainer.innerHTML = '<p style="color:red;">Failed to load books.</p>';
-                videosContainer.innerHTML = '<p style="color:red;">Failed to load videos.</p>';
                 audioContainer.innerHTML = '<p style="color:red;">Failed to load audio resources.</p>';
                 featuredContainer.innerHTML = '<p style="color:red;">Failed to load featured resources.</p>';
             }
         }
 
-        // Load resources when page loads
-        loadResources();
-        
-        // Track clicked resources to prevent multiple increments
-        const completedResources = new Set();
+        // Video pagination
+        function loadVideoPage(page) {
+            const videosContainer = document.querySelector('#videos .content-grid');
+            
+            // Clear container only for first page
+            if (page === 1) {
+                videosContainer.innerHTML = '';
+            }
+            
+            const startIndex = (page - 1) * videosPerPage;
+            const endIndex = startIndex + videosPerPage;
+            const pageVideos = allVideoResources.slice(startIndex, endIndex);
+
+            pageVideos.forEach(resource => {
+                const card = createVideoCard(resource);
+                videosContainer.appendChild(card);
+            });
+
+            currentVideoPage = page;
+            
+            // Add "Load More" button if there are more videos
+            if (endIndex < allVideoResources.length) {
+                addLoadMoreButton();
+            }
+        }
+
+        function addLoadMoreButton() {
+            const videosContainer = document.querySelector('#videos .content-grid');
+            
+            // Remove existing load more button
+            const existingButton = videosContainer.querySelector('.load-more-btn');
+            if (existingButton) existingButton.remove();
+            
+            const loadMoreBtn = document.createElement('button');
+            loadMoreBtn.className = 'load-more-btn';
+            loadMoreBtn.innerHTML = 'Load More Videos';
+            loadMoreBtn.addEventListener('click', () => {
+                loadVideoPage(currentVideoPage + 1);
+            });
+            
+            videosContainer.appendChild(loadMoreBtn);
+        }
+
+        // Helper function to create a featured card with smart navigation
+        function createFeaturedCard({ topic, description, author, image, file, resourceType, featured, resourceId }) {
+            const imageUrl = Array.isArray(image) && image.length > 0
+                ? image[0].url
+                : 'https://via.placeholder.com/300x200?text=No+Image';
+            const fileUrl = Array.isArray(file) && file.length > 0 ? file[0].url : '';
+            const type = resourceType || 'Book';
+            const title = topic || 'Untitled';
+            const desc = description || 'No description available.';
+            const writer = author || 'Unknown Author';
+
+            const card = document.createElement('div');
+            card.classList.add('card');
+            card.setAttribute('data-resource-type', type);
+            card.setAttribute('data-resource-id', resourceId);
+            card.setAttribute('data-file-url', fileUrl);
+            card.setAttribute('data-title', title);
+
+            // Determine featured tag
+            let tagLabel = '';
+            if (featured && featured.toLowerCase().includes('featured')) {
+                if (type === 'Video') tagLabel = 'POPULAR VIDEO';
+                else if (type === 'Book') tagLabel = 'FEATURED BOOK';
+                else if (type === 'Audio') tagLabel = 'FEATURED AUDIO';
+                else tagLabel = 'FEATURED RESOURCE';
+            }
+
+            card.innerHTML = `
+                <div class="card-image">
+                    <img src="${imageUrl}" alt="${title}" style="width:100%; height:100%; object-fit:cover;">
+                </div>
+                <div class="card-content">
+                    ${tagLabel ? `<span class="card-tag">${tagLabel}</span>` : ''}
+                    <h3 class="card-title">${title}</h3>
+                    <p class="card-description">${desc}</p>
+                    <small>By ${writer}</small>
+                </div>
+            `;
+
+            card.addEventListener('click', () => {
+                handleFeaturedCardClick(card);
+            });
+
+            return card;
+        }
+
+        // Smart navigation for featured cards
+        function handleFeaturedCardClick(card) {
+            const resourceType = card.getAttribute('data-resource-type');
+            const resourceId = card.getAttribute('data-resource-id');
+            const fileUrl = card.getAttribute('data-file-url');
+            const title = card.getAttribute('data-title');
+
+            // Navigate to appropriate tab
+            switch(resourceType) {
+                case 'Book':
+                    switchToTab('books');
+                    // Find and click the corresponding book card
+                    setTimeout(() => {
+                        const bookCard = document.querySelector(`.book-card[data-resource-id="${resourceId}"]`);
+                        if (bookCard) {
+                            bookCard.click();
+                        } else {
+                            openBookReaderWithFallback(title, fileUrl, resourceId);
+                        }
+                    }, 300);
+                    break;
+                    
+                case 'Video':
+                    switchToTab('videos');
+                    // Find and click the corresponding video card
+                    setTimeout(() => {
+                        const videoCard = document.querySelector(`.video-card[data-resource-id="${resourceId}"]`);
+                        if (videoCard) {
+                            const thumbnail = videoCard.querySelector('.video-thumbnail');
+                            if (thumbnail) thumbnail.click();
+                        }
+                    }, 300);
+                    break;
+                    
+                case 'Audio':
+                    switchToTab('audio');
+                    // Find and click the corresponding audio card
+                    setTimeout(() => {
+                        const audioCard = document.querySelector(`.audio-card[data-resource-id="${resourceId}"]`);
+                        if (audioCard) {
+                            const playBtn = audioCard.querySelector('.play-pause-btn');
+                            if (playBtn) playBtn.click();
+                        }
+                    }, 300);
+                    break;
+            }
+        }
+
+        // Helper function to create a video card with lazy loading
+        function createVideoCard({ topic, description, author, image, file, resourceType, featured, resourceId }) {
+            const imageUrl = Array.isArray(image) && image.length > 0
+                ? image[0].url
+                : 'https://via.placeholder.com/300x200?text=No+Image';
+            const fileUrl = Array.isArray(file) && file.length > 0 ? file[0].url : '';
+            const type = resourceType || 'Video';
+            const title = topic || 'Untitled';
+            const desc = description || 'No description available.';
+            const writer = author || 'Unknown Author';
+
+            const card = document.createElement('div');
+            card.classList.add('video-card');
+            card.setAttribute('data-resource-id', resourceId);
+
+            // Determine featured tag
+            let tagLabel = '';
+            if (featured && featured.toLowerCase().includes('featured')) {
+                tagLabel = 'FEATURED VIDEO';
+            }
+
+            card.innerHTML = `
+                <div class="card-content">
+                    ${tagLabel ? `<span class="card-tag">${tagLabel}</span>` : ''}
+                    <h3 class="card-title">${title}</h3>
+                    <p class="card-description">${desc}</p>
+                    <small>By ${writer}</small>
+                </div>
+                <div class="video-player">
+                    <div class="video-thumbnail"></div>
+                </div>
+            `;
+
+            // Add click handler to load video only when clicked
+            const thumbnail = card.querySelector('.video-thumbnail');
+            thumbnail.addEventListener('click', function() {
+                loadVideoOnClick(card, fileUrl, resourceId);
+            });
+
+            return card;
+        }
+
+        // Function to load video only when clicked
+        function loadVideoOnClick(card, fileUrl, resourceId) {
+            const videoContainer = card.querySelector('.video-player');
+            const thumbnail = card.querySelector('.video-thumbnail');
+            
+            // Remove thumbnail
+            thumbnail.style.display = 'none';
+            
+            // Create and insert video element
+            const video = document.createElement('video');
+            video.controls = true;
+            video.innerHTML = `<source src="${fileUrl}" type="video/mp4">Your browser does not support the video tag.`;
+            
+            let progressTracked = false;
+            
+            // Add progress tracking
+            video.addEventListener('timeupdate', () => {
+                if (video.duration) {
+                    const progress = (video.currentTime / video.duration) * 100;
+                    
+                    // Track progress when 80% watched
+                    if (progress >= 80 && !progressTracked && !completedResources.has(resourceId)) {
+                        progressTracked = true;
+                        completedResources.add(resourceId);
+                        updateVideoProgress(resourceId);
+                    }
+                }
+            });
+            
+            videoContainer.appendChild(video);
+        }
+
+        // Helper function to create an audio card with player controls
+        function createAudioCard({ topic, description, author, image, file, resourceType, featured, resourceId }) {
+            const imageUrl = Array.isArray(image) && image.length > 0
+                ? image[0].url
+                : 'https://via.placeholder.com/300x200?text=No+Image';
+            const fileUrl = Array.isArray(file) && file.length > 0 ? file[0].url : '';
+            const type = resourceType || 'Audio';
+            const title = topic || 'Untitled';
+            const desc = description || 'No description available.';
+            const writer = author || 'Unknown Author';
+
+            const card = document.createElement('div');
+            card.classList.add('audio-card');
+            card.setAttribute('data-resource-id', resourceId);
+
+            // Determine featured tag
+            let tagLabel = '';
+            if (featured && featured.toLowerCase().includes('featured')) {
+                tagLabel = 'FEATURED AUDIO';
+            }
+
+            card.innerHTML = `
+                <div class="audio-thumbnail">
+                    <div class="audio-icon">🎵</div>
+                </div>
+                <div class="card-content">
+                    ${tagLabel ? `<span class="card-tag">${tagLabel}</span>` : ''}
+                    <h3 class="card-title">${title}</h3>
+                    <p class="card-description">${desc}</p>
+                    <small>By ${writer}</small>
+                </div>
+                <div class="audio-controls">
+                    <button class="play-pause-btn">▶</button>
+                    <div class="audio-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 0%"></div>
+                        </div>
+                        <div class="audio-time">
+                            <span class="current-time">0:00</span>
+                            <span class="duration">0:00</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Add audio player functionality
+            const playPauseBtn = card.querySelector('.play-pause-btn');
+            const progressFill = card.querySelector('.progress-fill');
+            const currentTimeEl = card.querySelector('.current-time');
+            const durationEl = card.querySelector('.duration');
+            
+            const audio = new Audio(fileUrl);
+            let isPlaying = false;
+            let progressTracked = false;
+
+            // Format time function
+            function formatTime(seconds) {
+                const mins = Math.floor(seconds / 60);
+                const secs = Math.floor(seconds % 60);
+                return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+            }
+
+            // Update progress bar and time
+            audio.addEventListener('loadedmetadata', () => {
+                durationEl.textContent = formatTime(audio.duration);
+            });
+
+            audio.addEventListener('timeupdate', () => {
+                const progress = (audio.currentTime / audio.duration) * 100;
+                progressFill.style.width = `${progress}%`;
+                currentTimeEl.textContent = formatTime(audio.currentTime);
+
+                // Track progress when 80% listened
+                if (progress >= 80 && !progressTracked && !completedResources.has(resourceId)) {
+                    progressTracked = true;
+                    completedResources.add(resourceId);
+                    updateAudioProgress(resourceId);
+                }
+            });
+
+            // Play/pause functionality
+            playPauseBtn.addEventListener('click', () => {
+                if (isPlaying) {
+                    audio.pause();
+                    playPauseBtn.textContent = '▶';
+                } else {
+                    audio.play();
+                    playPauseBtn.textContent = '⏸';
+                }
+                isPlaying = !isPlaying;
+            });
+
+            // Reset when audio ends
+            audio.addEventListener('ended', () => {
+                isPlaying = false;
+                playPauseBtn.textContent = '▶';
+                progressFill.style.width = '100%';
+                currentTimeEl.textContent = durationEl.textContent;
+            });
+
+            return card;
+        }
+
+        // Helper function to create a book card
+        function createBookCard({ topic, description, author, image, file, resourceType, featured, resourceId }) {
+            const imageUrl = Array.isArray(image) && image.length > 0 ? image[0].url : 'https://via.placeholder.com/300x200?text=No+Image';
+            const fileUrl = Array.isArray(file) && file.length > 0 ? file[0].url : '';
+            const type = resourceType || 'Book';
+            const title = topic || 'Untitled';
+            const desc = description || 'No description available.';
+            const writer = author || 'Unknown Author';
+
+            const card = document.createElement('div');
+            card.classList.add('book-card');
+            card.setAttribute('data-resource-id', resourceId);
+
+            // Determine featured tag
+            let tagLabel = '';
+            if (featured && featured.toLowerCase().includes('featured')) {
+                tagLabel = 'FEATURED BOOK';
+            }
+
+            card.innerHTML = `
+                <div class="card-image">
+                    <img src="${imageUrl}" alt="${title}" style="width:100%; height:100%; object-fit:cover;">
+                </div>
+                <div class="card-content">
+                    ${tagLabel ? `<span class="card-tag">${tagLabel}</span>` : ''}
+                    <h3 class="card-title">${title}</h3>
+                    <p class="card-description">${desc}</p>
+                    <small>By ${writer}</small>
+                </div>
+            `;
+
+            card.addEventListener('click', () => {
+                if (fileUrl) {
+                    openBookReaderWithFallback(title, fileUrl, resourceId);
+                } else {
+                    alert('No book file available.');
+                }
+            });
+
+            return card;
+        }
+
+        // Tab switching function
+        function switchToTab(tabName) {
+            // Remove active class from all tabs and contents
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+            // Add active class to clicked tab
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+        }
 
         // Book Reader functionality with PDF.js fallback
         const bookReader = document.getElementById('bookReader');
@@ -1519,27 +1522,27 @@
 
         let currentBookId = null;
         let progressTracked = false;
-        
+
         async function openBookReaderWithFallback(title, fileUrl, bookId) {
             currentBookId = bookId;
             progressTracked = false;
-    
+            
             readerTitle.textContent = title;
             completionStatus.textContent = '';
-    
+            
             // Use the proxy URL instead of direct S3 URL
             const proxyUrl = `https://mgi-login-worker.stevechikeabia.workers.dev/proxy-pdf/${encodeURIComponent(fileUrl)}`;
-    
+            
             try {
                 readerContent.innerHTML = '<div class="loading">Loading PDF...</div>';
                 bookReader.classList.add('active');
-        
-                const loadingTask = pdfjsLib.getDocument(proxyUrl); // Use proxy URL
+                
+                const loadingTask = pdfjsLib.getDocument(proxyUrl);
                 const pdf = await loadingTask.promise;
-        
+                
                 // If we get here, PDF.js worked - set up the PDF reader
                 await setupPdfReader(pdf, fileUrl, bookId);
-        
+                
             } catch (error) {
                 console.log('PDF.js failed, falling back to Google Docs viewer:', error);
                 // Use Google Docs viewer as fallback
@@ -1622,7 +1625,6 @@
             document.querySelector('.page-nav').style.display = 'none';
             
             // For Google Docs viewer, we'll track completion after a time delay
-            // since we can't track page progress
             setTimeout(() => {
                 if (!progressTracked && !completedResources.has(bookId)) {
                     progressTracked = true;
@@ -1631,7 +1633,7 @@
                     completionStatus.textContent = '✓ Completed!';
                     completionStatus.style.color = 'green';
                 }
-            }, 30000); // Track as completed after 30 seconds of viewing
+            }, 30000);
         }
 
         function checkBookProgress(currentPage, totalPages) {
@@ -1753,16 +1755,8 @@
 
         tabs.forEach(tab => {
             tab.addEventListener('click', () => {
-                // Remove active class from all tabs and contents
-                tabs.forEach(t => t.classList.remove('active'));
-                tabContents.forEach(c => c.classList.remove('active'));
-
-                // Add active class to clicked tab
-                tab.classList.add('active');
-
-                // Show corresponding content
                 const tabId = tab.getAttribute('data-tab');
-                document.getElementById(tabId).classList.add('active');
+                switchToTab(tabId);
             });
         });
 
