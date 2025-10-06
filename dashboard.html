@@ -2001,7 +2001,33 @@
                 // Mark as completed when video finishes
                 video.addEventListener('ended', () => {
                     markLessonCompleted(lessonElement, courseCard);
+                
+                    // Add replay overlay
+                    const replayBtn = document.createElement('button');
+                    replayBtn.textContent = 'Replay Lesson';
+                    replayBtn.style.position = 'absolute';
+                    replayBtn.style.top = '50%';
+                    replayBtn.style.left = '50%';
+                    replayBtn.style.transform = 'translate(-50%, -50%)';
+                    replayBtn.style.background = 'rgba(0,0,0,0.6)';
+                    replayBtn.style.color = '#fff';
+                    replayBtn.style.border = 'none';
+                    replayBtn.style.padding = '10px 20px';
+                    replayBtn.style.borderRadius = '8px';
+                    replayBtn.style.cursor = 'pointer';
+                    replayBtn.style.fontWeight = 'bold';
+                    replayBtn.style.zIndex = '5';
+                
+                    replayBtn.addEventListener('click', () => {
+                        video.currentTime = 0;
+                        video.play();
+                        replayBtn.remove();
+                    });
+                
+                    body.style.position = 'relative';
+                    body.appendChild(replayBtn);
                 });
+
         
             } else if (fileUrl.endsWith('.pdf')) {
                 const iframe = document.createElement('iframe');
