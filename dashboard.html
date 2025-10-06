@@ -1898,22 +1898,21 @@
                 if (!response.ok) throw new Error('Failed to fetch courses');
         
                 const courses = await response.json();
-                coursesContainer.innerHTML = ''; // clear placeholder
+                coursesContainer.innerHTML = '';
         
                 if (!Array.isArray(courses) || courses.length === 0) {
                     coursesContainer.innerHTML = '<p>No courses available.</p>';
                     return;
                 }
         
-                // Loop through each course record
                 courses.forEach(course => {
                     const courseCard = document.createElement('div');
                     courseCard.classList.add('course-card');
         
                     const courseName = course['Course Name'] || 'Untitled Course';
+                    const courseId = course['Course ID'] || '';
                     const lessons = [];
         
-                    // Collect all available lessons dynamically
                     for (let i = 1; i <= 20; i++) {
                         const lessonField = `Lesson ${i}`;
                         if (course[lessonField] && course[lessonField].fileName && course[lessonField].fileUrl) {
@@ -1921,20 +1920,15 @@
                         }
                     }
         
-                    // Build card layout
+                    // Build card without progress bar
                     courseCard.innerHTML = `
                         <h3 class="card-title">${courseName}</h3>
                         <p class="card-description">${lessons.length} lessons</p>
-                        <div class="course-progress">
-                            <small style="color: var(--text-light);">${lessons.length ? '0%' : 'No lessons'}</small>
-                            <div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div>
-                        </div>
                         <ul class="lessons-list"></ul>
                     `;
         
                     const lessonsList = courseCard.querySelector('.lessons-list');
         
-                    // Create lesson list
                     lessons.forEach((lesson, index) => {
                         const li = document.createElement('li');
                         li.classList.add('lesson-item');
@@ -1942,25 +1936,22 @@
                             <span>📘 ${lesson.fileName}</span>
                             <div class="lesson-status"></div>
                         `;
-        
-                        // When lesson clicked, open viewer
                         li.addEventListener('click', () => {
-                            openLessonModal(courseName, lesson.fileName, lesson.fileUrl, li, courseCard);
+                            openLessonModal(courseName, courseId, lesson.fileName, lesson.fileUrl, index, lessons.length);
                         });
-        
                         lessonsList.appendChild(li);
                     });
         
                     coursesContainer.appendChild(courseCard);
                 });
-        
             } catch (error) {
                 console.error('❌ Error loading courses:', error);
                 coursesContainer.innerHTML = '<p style="color:red;">Failed to load courses.</p>';
             }
         }
-        function openLessonModal(courseName, lessonTitle, fileUrl, lessonElement, courseCard) {
-            // Get or create modal
+
+        function openLessonModal(courseName, courseId, lessonTitle, fileUrl, lessonIndex, totalLessons) {
+            // Create modal if not present
             let modal = document.getElementById('lessonModal');
             if (!modal) {
                 modal = document.createElement('div');
@@ -1977,22 +1968,16 @@
                 `;
                 document.body.appendChild(modal);
         
-                // Close handlers
                 modal.querySelector('#closeLessonModal').addEventListener('click', closeLessonModal);
                 modal.querySelector('.lesson-modal-overlay').addEventListener('click', closeLessonModal);
             }
         
-            // Always reset modal body before showing new content
             const body = document.getElementById('lessonModalBody');
-            body.innerHTML = ''; // important: clear old video or iframe
-        
-            // Update title and show modal
+            body.innerHTML = '';
             document.getElementById('lessonModalTitle').textContent = lessonTitle;
             modal.style.display = 'flex';
         
-            // Detect file type
             if (fileUrl.endsWith('.mp4')) {
-                // Create a fresh video element each time
                 const videoContainer = document.createElement('div');
                 videoContainer.style.position = 'relative';
         
@@ -2002,14 +1987,35 @@
                 video.autoplay = true;
                 video.style.width = '100%';
                 video.style.borderRadius = '12px';
-        
                 videoContainer.appendChild(video);
                 body.appendChild(videoContainer);
         
-                // When video ends, mark completed and show replay overlay
-                video.addEventListener('ended', () => {
-                    markLessonCompleted(lessonElement, courseCard);
+                // When last lesson finishes, call backend
+                video.addEventListener('ended', async () => {
+                    if (lessonIndex + 1 === totalLessons) {
+                        const userId = localStorage.getItem('user_row_id'); // must be saved at login
+                        if (!userId) {
+                            console.warn('User ID not found in localStorage.');
+                            return;
+                        }
         
+                        try {
+                            const res = await fetch('https://mgi-login-worker.stevechikeabia.workers.dev/course_progress', {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    courseId,
+                                    userId
+                                })
+                            });
+                            const data = await res.json();
+                            console.log('✅ Course completion recorded:', data);
+                        } catch (err) {
+                            console.error('❌ Failed to record course progress:', err);
+                        }
+                    }
+        
+                    // Add replay button
                     const replayBtn = document.createElement('button');
                     replayBtn.textContent = 'Replay Lesson';
                     Object.assign(replayBtn.style, {
@@ -2035,21 +2041,14 @@
         
                     videoContainer.appendChild(replayBtn);
                 });
-            } 
-            
-            else if (fileUrl.endsWith('.pdf')) {
+            } else if (fileUrl.endsWith('.pdf')) {
                 const iframe = document.createElement('iframe');
                 iframe.src = fileUrl;
                 iframe.style.width = '100%';
                 iframe.style.height = '80vh';
                 iframe.style.border = 'none';
                 body.appendChild(iframe);
-        
-                // Optional: mark completed after 10s
-                setTimeout(() => markLessonCompleted(lessonElement, courseCard), 10000);
-            } 
-            
-            else {
+            } else {
                 body.innerHTML = `<p>Unsupported file type: ${fileUrl}</p>`;
             }
         }
@@ -2059,11 +2058,9 @@
             if (modal) {
                 modal.style.display = 'none';
                 const body = document.getElementById('lessonModalBody');
-                if (body) body.innerHTML = ''; // clear old video for next time
+                if (body) body.innerHTML = '';
             }
         }
-
-
         // Tab Navigation
         const tabs = document.querySelectorAll('.nav-tab');
         const tabContents = document.querySelectorAll('.tab-content');
