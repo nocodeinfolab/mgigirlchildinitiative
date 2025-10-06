@@ -1992,14 +1992,20 @@
         
                 // When last lesson finishes, call backend
                 video.addEventListener('ended', async () => {
+                    console.log(`🎬 Video ended: "${lessonTitle}" (Lesson ${lessonIndex + 1} of ${totalLessons})`);
+                
+                    // Check if this is the last lesson
                     if (lessonIndex + 1 === totalLessons) {
-                        const userId = localStorage.getItem('user_row_id'); // must be saved at login
+                        console.log(`🏁 This is the LAST lesson for course "${courseName}". Preparing to update progress...`);
+                        const userId = localStorage.getItem('user_row_id'); // from login
                         if (!userId) {
-                            console.warn('User ID not found in localStorage.');
+                            console.warn('⚠️ User ID not found in localStorage — cannot update course progress.');
                             return;
                         }
-        
+                
+                        // Send PATCH request to backend
                         try {
+                            console.log('📡 Sending PATCH request to /course_progress...');
                             const res = await fetch('https://mgi-login-worker.stevechikeabia.workers.dev/course_progress', {
                                 method: 'PATCH',
                                 headers: { 'Content-Type': 'application/json' },
@@ -2008,14 +2014,19 @@
                                     userId
                                 })
                             });
+                
                             const data = await res.json();
-                            console.log('✅ Course completion recorded:', data);
+                            if (res.ok) {
+                                console.log('✅ Course progress successfully recorded:', data);
+                            } else {
+                                console.error('❌ Server responded with error:', data);
+                            }
                         } catch (err) {
-                            console.error('❌ Failed to record course progress:', err);
+                            console.error('🚨 Failed to send course progress request:', err);
                         }
                     }
-        
-                    // Add replay button
+                
+                    // Add replay button for any lesson
                     const replayBtn = document.createElement('button');
                     replayBtn.textContent = 'Replay Lesson';
                     Object.assign(replayBtn.style, {
@@ -2032,15 +2043,17 @@
                         fontWeight: 'bold',
                         zIndex: '5'
                     });
-        
+                
                     replayBtn.addEventListener('click', () => {
+                        console.log(`🔁 Replaying: "${lessonTitle}"`);
                         video.currentTime = 0;
                         video.play();
                         replayBtn.remove();
                     });
-        
+                
                     videoContainer.appendChild(replayBtn);
                 });
+
             } else if (fileUrl.endsWith('.pdf')) {
                 const iframe = document.createElement('iframe');
                 iframe.src = fileUrl;
