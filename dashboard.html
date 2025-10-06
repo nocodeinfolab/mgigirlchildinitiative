@@ -937,7 +937,7 @@
                 <h2 class="section-title">📊 Your Progress</h2>
                 <div class="progress-stats">
                     <div class="stat">
-                        <div class="stat-number"></div>
+                        <div id="coursesCompleted" class="stat-number">0</div>
                         <div class="stat-label">Courses Completed</div>
                     </div>
                     <div class="stat">
@@ -1183,6 +1183,18 @@
 
                 const user = await response.json();
                 console.log('User data:', user);
+
+                // ✅ Update "Courses Completed" stat
+                const coursesCompletedEl = document.getElementById('coursesCompleted');
+                const courseProgress = user["Course Progress"] || 0;
+                
+                if (coursesCompletedEl) {
+                    coursesCompletedEl.textContent = courseProgress;
+                    console.log(`🎓 Courses Completed updated to: ${courseProgress}`);
+                } else {
+                    console.warn('⚠️ coursesCompleted element not found in DOM.');
+                }
+
 
                 // Fill in the dynamic welcome message
                 const firstName = user['First Name'] || 'User';
