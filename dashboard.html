@@ -1997,7 +1997,7 @@
                     // Check if this is the last lesson
                     if (lessonIndex + 1 === totalLessons) {
                         console.log(`🏁 This is the LAST lesson for course "${courseName}". Preparing to update progress...`);
-                        const userId = localStorage.getItem('user_row_id'); // from login
+                        const userId = localStorage.getItem('userRowId');
                         if (!userId) {
                             console.warn('⚠️ User ID not found in localStorage — cannot update course progress.');
                             return;
