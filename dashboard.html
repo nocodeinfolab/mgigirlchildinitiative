@@ -412,6 +412,93 @@
             display: flex;
             justify-content: space-between;
         }
+        /* Video Card Styles */
+        .video-card {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            min-height: 44px;
+            transition: all 0.3s ease;
+        }
+        
+        .video-card-content {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        
+        .video-card-text {
+            padding: 1rem;
+            flex-shrink: 0;
+        }
+        
+        .video-player {
+            height: 200px;
+            position: relative;
+            flex-grow: 1;
+            transition: all 0.3s ease;
+        }
+        
+        .video-player.expanded {
+            height: 100%;
+            margin: 0;
+            border-radius: 15px;
+        }
+        
+        .video-thumbnail {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--secondary) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: relative;
+            background-size: cover;
+            background-position: center;
+        }
+        
+        .video-thumbnail::after {
+            content: '▶';
+            font-size: 3rem;
+            color: white;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+        
+        .video-player video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            background: black;
+            border-radius: 0 0 15px 15px;
+        }
+        
+        /* When video is loaded and text is hidden */
+        .video-card.video-expanded .video-card-text {
+            display: none;
+        }
+        
+        .video-card.video-expanded .video-player {
+            height: 100%;
+            margin: 0;
+            border-radius: 15px;
+        }
+        
+        .video-card.video-expanded .video-player video {
+            border-radius: 15px;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .video-card.video-expanded {
+                min-height: 250px;
+            }
+            
+            .video-player {
+                height: 180px;
+            }
+        }
 
         /* Audio Card */
         .audio-card {
@@ -1424,7 +1511,6 @@
                     break;
             }
         }
-
         // Helper function to create a video card with lazy loading
         function createVideoCard({ topic, description, author, image, file, resourceType, featured, resourceId }) {
             const imageUrl = Array.isArray(image) && image.length > 0
@@ -1435,49 +1521,64 @@
             const title = topic || 'Untitled';
             const desc = description || 'No description available.';
             const writer = author || 'Unknown Author';
-
+        
             const card = document.createElement('div');
             card.classList.add('video-card');
             card.setAttribute('data-resource-id', resourceId);
-
+        
             // Determine featured tag
             let tagLabel = '';
             if (featured && featured.toLowerCase().includes('featured')) {
                 tagLabel = 'FEATURED VIDEO';
             }
-
+        
             card.innerHTML = `
-                <div class="card-content">
-                    ${tagLabel ? `<span class="card-tag">${tagLabel}</span>` : ''}
-                    <h3 class="card-title">${title}</h3>
-                    <p class="card-description">${desc}</p>
-                    <small>By ${writer}</small>
-                </div>
-                <div class="video-player">
-                    <div class="video-thumbnail"></div>
+                <div class="video-card-content">
+                    <div class="video-card-text">
+                        ${tagLabel ? `<span class="card-tag">${tagLabel}</span>` : ''}
+                        <h3 class="card-title">${title}</h3>
+                        <p class="card-description">${desc}</p>
+                        <small>By ${writer}</small>
+                    </div>
+                    <div class="video-player">
+                        <div class="video-thumbnail"></div>
+                    </div>
                 </div>
             `;
-
+        
             // Add click handler to load video only when clicked
             const thumbnail = card.querySelector('.video-thumbnail');
             thumbnail.addEventListener('click', function() {
                 loadVideoOnClick(card, fileUrl, resourceId);
             });
-
+        
             return card;
         }
-
         // Function to load video only when clicked
         function loadVideoOnClick(card, fileUrl, resourceId) {
             const videoContainer = card.querySelector('.video-player');
             const thumbnail = card.querySelector('.video-thumbnail');
+            const textContent = card.querySelector('.video-card-text');
             
-            // Remove thumbnail
+            // Remove thumbnail and hide text content
             thumbnail.style.display = 'none';
+            if (textContent) {
+                textContent.style.display = 'none';
+            }
+            
+            // Expand video container to fill the card
+            videoContainer.style.margin = '0';
+            videoContainer.style.borderRadius = '15px';
+            videoContainer.style.height = '100%';
+            videoContainer.style.minHeight = '300px'; // Ensure minimum height
             
             // Create and insert video element
             const video = document.createElement('video');
             video.controls = true;
+            video.style.width = '100%';
+            video.style.height = '100%';
+            video.style.objectFit = 'cover';
+            video.style.borderRadius = '15px';
             video.innerHTML = `<source src="${fileUrl}" type="video/mp4">Your browser does not support the video tag.`;
             
             let progressTracked = false;
@@ -1496,9 +1597,18 @@
                 }
             });
             
+            // Auto-play the video when loaded
+            video.addEventListener('loadeddata', () => {
+                video.play().catch(e => {
+                    console.log('Autoplay prevented:', e);
+                });
+            });
+            
             videoContainer.appendChild(video);
+            
+            // Adjust card height for better video display
+            card.style.minHeight = '300px';
         }
-
         // Helper function to create an audio card with player controls
         function createAudioCard({ topic, description, author, image, file, resourceType, featured, resourceId }) {
             const imageUrl = Array.isArray(image) && image.length > 0
