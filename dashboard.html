@@ -1121,6 +1121,7 @@
                 const email = user['Email'] || '';
                 const fullName = user['Full Name'] || `${firstName} ${lastName}`.trim() || 'User';
                 const dateCreated = user['Date Created'] || '';
+                console.log('dateCreated value:', dateCreated);
 
                 let memberSince = 'Unknown';
                 if (dateCreated) {
