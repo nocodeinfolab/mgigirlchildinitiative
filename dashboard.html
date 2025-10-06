@@ -755,6 +755,7 @@
         }
 
         
+        /* Fullscreen book reader */
         .book-reader {
             display: none;
             position: fixed;
@@ -768,6 +769,120 @@
             flex-direction: column;
             padding: 0;
             margin: 0;
+        }
+        
+        .book-reader.active {
+            display: flex;
+        }
+        
+        .reader-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            padding: 1rem;
+            padding-top: calc(1rem + env(safe-area-inset-top));
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+            min-height: 60px;
+        }
+        
+        .reader-content {
+            flex: 1;
+            overflow-y: auto;
+            background: #f5f5f5;
+            position: relative;
+            height: calc(100vh - 120px); /* Subtract header and controls height */
+            height: calc(100dvh - 120px);
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .reader-controls {
+            background: var(--light-pink);
+            padding: 1rem;
+            padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid var(--light-purple);
+            flex-shrink: 0;
+            min-height: 60px;
+        }
+        
+        /* Mobile-specific book reader improvements */
+        @media (max-width: 768px) {
+            .book-reader {
+                /* Ensure it covers the entire screen including status bar */
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                width: 100%;
+                height: 100%;
+            }
+            
+            .reader-header {
+                padding: 0.8rem 1rem;
+                padding-top: calc(0.8rem + env(safe-area-inset-top));
+                min-height: 50px;
+            }
+            
+            .reader-header h2 {
+                font-size: 1.2rem;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                max-width: 60%;
+            }
+            
+            .reader-content {
+                height: calc(100vh - 110px);
+                height: calc(100dvh - 110px);
+            }
+            
+            .reader-controls {
+                padding: 0.8rem 1rem;
+                padding-bottom: calc(0.8rem + env(safe-area-inset-bottom));
+                min-height: 50px;
+            }
+            
+            .pdf-container {
+                padding: 10px;
+            }
+            
+            .pdf-page {
+                max-width: 95vw;
+                height: auto;
+            }
+            
+            /* Better button sizing for mobile */
+            .nav-btn, .close-reader {
+                padding: 0.8rem 1rem;
+                font-size: 0.9rem;
+                min-height: 44px; /* Minimum touch target */
+            }
+            
+            .page-nav {
+                gap: 0.5rem;
+            }
+        }
+        
+        /* For very small screens */
+        @media (max-width: 480px) {
+            .reader-header h2 {
+                font-size: 1rem;
+                max-width: 50%;
+            }
+            
+            .reader-content {
+                height: calc(100vh - 100px);
+                height: calc(100dvh - 100px);
+            }
+            
+            .nav-btn, .close-reader {
+                padding: 0.6rem 0.8rem;
+                font-size: 0.8rem;
+            }
         }
     </style>
 </head>
