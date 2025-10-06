@@ -412,6 +412,70 @@
             display: flex;
             justify-content: space-between;
         }
+        /* --- expand-to-fill (keeps card size) --- */
+        .video-card {
+            position: relative; /* make absolute children position relative to the card */
+            overflow: hidden;   /* ensures the video is clipped to rounded corners */
+        }
+        
+        /* smooth transitions for the text */
+        .video-card .card-content {
+            transition: opacity 0.25s ease, transform 0.25s ease;
+            z-index: 1;
+            position: relative;
+        }
+        
+        /* base video-player */
+        .video-card .video-player {
+            position: relative;
+            height: 250px; /* default height (your original value) */
+            transition: all 0.25s ease;
+            z-index: 0;
+        }
+        
+        /* When card is expanded: make the video-player fill the whole card */
+        .video-card.expanded .video-player {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 100% !important;
+            z-index: 4;
+        }
+        
+        /* make the <video> fully fill the player area and use cover so it crops nicely */
+        .video-card .video-player video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* video fills while preserving aspect ratio */
+            border-top-left-radius: 15px;
+            border-top-right-radius: 15px;
+        }
+        
+        /* small close button that overlays the expanded video */
+        .video-close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 6;
+            background: rgba(0,0,0,0.45);
+            border: none;
+            color: white;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+        }
+
 
         /* Audio Card */
         .audio-card {
@@ -1471,23 +1535,68 @@
         function loadVideoOnClick(card, fileUrl, resourceId) {
             const videoContainer = card.querySelector('.video-player');
             const thumbnail = card.querySelector('.video-thumbnail');
-            
-            // Remove thumbnail
-            thumbnail.style.display = 'none';
-            
-            // Create and insert video element
+        
+            // Prevent double-loading
+            if (card.classList.contains('expanded')) return;
+        
+            // -----------------------
+            // 1) Freeze the card height so the outer size does not change
+            // -----------------------
+            const prevHeight = card.getBoundingClientRect().height;
+            card.style.height = prevHeight + 'px';
+            card.style.transition = 'height 0.25s ease, box-shadow 0.25s ease';
+        
+            // -----------------------
+            // 2) Hide thumbnail and fade out the card text
+            // -----------------------
+            if (thumbnail) thumbnail.style.display = 'none';
+        
+            const content = card.querySelector('.card-content');
+            if (content) {
+                content.style.opacity = '0';
+                content.style.transform = 'translateY(-8px)';
+                // remove from layout after the fade so the video can sit on top
+                setTimeout(() => {
+                    content.style.display = 'none';
+                }, 260);
+            }
+        
+            // mark expanded (used by CSS)
+            card.classList.add('expanded');
+        
+            // -----------------------
+            // 3) Build video element that absolutely fills the card
+            // -----------------------
+            // Clear whatever was inside the video container
+            videoContainer.innerHTML = '';
+        
+            // Add close button overlay
+            const closeBtn = document.createElement('button');
+            closeBtn.className = 'video-close-btn';
+            closeBtn.title = 'Close';
+            closeBtn.innerHTML = '&times;';
+            closeBtn.addEventListener('click', () => collapseVideo(card));
+            videoContainer.appendChild(closeBtn);
+        
             const video = document.createElement('video');
             video.controls = true;
+            video.autoplay = true;
+            video.playsInline = true;
             video.innerHTML = `<source src="${fileUrl}" type="video/mp4">Your browser does not support the video tag.`;
-            
+        
+            // styling for immediate fill is handled in CSS .video-player.expanded rules
+            videoContainer.appendChild(video);
+        
+            // keep a reference so collapseVideo can pause/remove it
+            card._currentVideo = video;
+        
+            // -----------------------
+            // 4) Progress tracking (same idea as before)
+            // -----------------------
             let progressTracked = false;
-            
-            // Add progress tracking
             video.addEventListener('timeupdate', () => {
                 if (video.duration) {
                     const progress = (video.currentTime / video.duration) * 100;
-                    
-                    // Track progress when 80% watched
                     if (progress >= 80 && !progressTracked && !completedResources.has(resourceId)) {
                         progressTracked = true;
                         completedResources.add(resourceId);
@@ -1495,9 +1604,53 @@
                     }
                 }
             });
-            
-            videoContainer.appendChild(video);
+        
+            // optional: when video ends, keep it expanded but we could add UI here
+            video.addEventListener('ended', () => {
+                // keep expanded — user can close with the × button
+            });
         }
+        
+        // Collapse the expanded video back to the original card state
+        function collapseVideo(card) {
+            const videoContainer = card.querySelector('.video-player');
+            const content = card.querySelector('.card-content');
+        
+            // Pause and remove video
+            const video = card._currentVideo;
+            if (video) {
+                try { video.pause(); } catch (e) { /* ignore */ }
+            }
+        
+            // restore thumbnail visually
+            videoContainer.innerHTML = `<div class="video-thumbnail"></div>`;
+        
+            // restore card content with a small delay (so it doesn't snap)
+            if (content) {
+                content.style.display = '';
+                // force a tiny delay so CSS transition runs
+                setTimeout(() => {
+                    content.style.opacity = '1';
+                    content.style.transform = 'translateY(0)';
+                }, 20);
+            }
+        
+            // remove expanded state and reset height so card becomes responsive again
+            card.classList.remove('expanded');
+            card.style.height = '';
+        
+            // cleanup stored reference
+            delete card._currentVideo;
+        }
+        
+        // Keep expanded card heights reasonable if the window is resized while expanded
+        window.addEventListener('resize', () => {
+            document.querySelectorAll('.video-card.expanded').forEach(card => {
+                // set to current computed height to keep visual stability after resize
+                card.style.height = card.getBoundingClientRect().height + 'px';
+            });
+        });
+
 
         // Helper function to create an audio card with player controls
         function createAudioCard({ topic, description, author, image, file, resourceType, featured, resourceId }) {
