@@ -1536,41 +1536,30 @@
             const videoContainer = card.querySelector('.video-player');
             const thumbnail = card.querySelector('.video-thumbnail');
         
-            // Prevent double-loading
+            // Save the resource info so we can reuse it on collapse
+            card.dataset.fileUrl = fileUrl;
+            card.dataset.resourceId = resourceId;
+        
             if (card.classList.contains('expanded')) return;
         
-            // -----------------------
-            // 1) Freeze the card height so the outer size does not change
-            // -----------------------
+            // --- Freeze the height ---
             const prevHeight = card.getBoundingClientRect().height;
             card.style.height = prevHeight + 'px';
             card.style.transition = 'height 0.25s ease, box-shadow 0.25s ease';
         
-            // -----------------------
-            // 2) Hide thumbnail and fade out the card text
-            // -----------------------
+            // --- Hide content & thumbnail ---
             if (thumbnail) thumbnail.style.display = 'none';
-        
             const content = card.querySelector('.card-content');
             if (content) {
                 content.style.opacity = '0';
                 content.style.transform = 'translateY(-8px)';
-                // remove from layout after the fade so the video can sit on top
-                setTimeout(() => {
-                    content.style.display = 'none';
-                }, 260);
+                setTimeout(() => (content.style.display = 'none'), 260);
             }
         
-            // mark expanded (used by CSS)
             card.classList.add('expanded');
-        
-            // -----------------------
-            // 3) Build video element that absolutely fills the card
-            // -----------------------
-            // Clear whatever was inside the video container
             videoContainer.innerHTML = '';
         
-            // Add close button overlay
+            // --- Close button ---
             const closeBtn = document.createElement('button');
             closeBtn.className = 'video-close-btn';
             closeBtn.title = 'Close';
@@ -1578,21 +1567,16 @@
             closeBtn.addEventListener('click', () => collapseVideo(card));
             videoContainer.appendChild(closeBtn);
         
+            // --- Video setup ---
             const video = document.createElement('video');
             video.controls = true;
             video.autoplay = true;
             video.playsInline = true;
             video.innerHTML = `<source src="${fileUrl}" type="video/mp4">Your browser does not support the video tag.`;
-        
-            // styling for immediate fill is handled in CSS .video-player.expanded rules
             videoContainer.appendChild(video);
-        
-            // keep a reference so collapseVideo can pause/remove it
             card._currentVideo = video;
         
-            // -----------------------
-            // 4) Progress tracking (same idea as before)
-            // -----------------------
+            // --- Progress tracking ---
             let progressTracked = false;
             video.addEventListener('timeupdate', () => {
                 if (video.duration) {
@@ -1604,45 +1588,42 @@
                     }
                 }
             });
-        
-            // optional: when video ends, keep it expanded but we could add UI here
-            video.addEventListener('ended', () => {
-                // keep expanded — user can close with the × button
-            });
         }
         
-        // Collapse the expanded video back to the original card state
         function collapseVideo(card) {
             const videoContainer = card.querySelector('.video-player');
             const content = card.querySelector('.card-content');
         
-            // Pause and remove video
+            // --- Stop and remove video ---
             const video = card._currentVideo;
             if (video) {
-                try { video.pause(); } catch (e) { /* ignore */ }
+                try { video.pause(); } catch (e) {}
             }
         
-            // restore thumbnail visually
+            // --- Restore thumbnail and reattach click handler ---
+            const fileUrl = card.dataset.fileUrl;
+            const resourceId = card.dataset.resourceId;
             videoContainer.innerHTML = `<div class="video-thumbnail"></div>`;
+            const thumbnail = videoContainer.querySelector('.video-thumbnail');
+            if (thumbnail) {
+                thumbnail.addEventListener('click', () => loadVideoOnClick(card, fileUrl, resourceId));
+            }
         
-            // restore card content with a small delay (so it doesn't snap)
+            // --- Restore text content ---
             if (content) {
                 content.style.display = '';
-                // force a tiny delay so CSS transition runs
                 setTimeout(() => {
                     content.style.opacity = '1';
                     content.style.transform = 'translateY(0)';
                 }, 20);
             }
         
-            // remove expanded state and reset height so card becomes responsive again
+            // --- Reset card state ---
             card.classList.remove('expanded');
             card.style.height = '';
-        
-            // cleanup stored reference
             delete card._currentVideo;
         }
-        
+    
         // Keep expanded card heights reasonable if the window is resized while expanded
         window.addEventListener('resize', () => {
             document.querySelectorAll('.video-card.expanded').forEach(card => {
