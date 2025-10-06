@@ -1346,25 +1346,27 @@
 
         let currentBookId = null;
         let progressTracked = false;
-
+        
         async function openBookReaderWithFallback(title, fileUrl, bookId) {
             currentBookId = bookId;
             progressTracked = false;
-            
+    
             readerTitle.textContent = title;
             completionStatus.textContent = '';
-            
-            // Try PDF.js first, fallback to Google Docs viewer if CORS fails
+    
+            // Use the proxy URL instead of direct S3 URL
+            const proxyUrl = `https://mgi-login-worker.stevechikeabia.workers.dev/proxy-pdf/${encodeURIComponent(fileUrl)}`;
+    
             try {
                 readerContent.innerHTML = '<div class="loading">Loading PDF...</div>';
                 bookReader.classList.add('active');
-                
-                const loadingTask = pdfjsLib.getDocument(fileUrl);
+        
+                const loadingTask = pdfjsLib.getDocument(proxyUrl); // Use proxy URL
                 const pdf = await loadingTask.promise;
-                
+        
                 // If we get here, PDF.js worked - set up the PDF reader
                 await setupPdfReader(pdf, fileUrl, bookId);
-                
+        
             } catch (error) {
                 console.log('PDF.js failed, falling back to Google Docs viewer:', error);
                 // Use Google Docs viewer as fallback
