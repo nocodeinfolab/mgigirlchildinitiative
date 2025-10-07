@@ -1145,6 +1145,7 @@
         let allVideoResources = [];
         let currentVideoPage = 1;
         const videosPerPage = 12;
+        let currentPdf = null;
 
         document.addEventListener('DOMContentLoaded', async () => {
             const rowId = localStorage.getItem('userRowId');
@@ -1905,14 +1906,13 @@
                 </div>
             `;
 
-            // Audio player with cleanup
+            // Audio player with simple mobile compatibility
             const playPauseBtn = card.querySelector('.play-pause-btn');
             const progressFill = card.querySelector('.progress-fill');
             const currentTimeEl = card.querySelector('.current-time');
             const durationEl = card.querySelector('.duration');
             
-            const audio = new Audio();
-            audio.preload = 'metadata'; // Only load metadata
+            const audio = new Audio(fileUrl); // Direct source assignment like your working code
             let isPlaying = false;
             let progressTracked = false;
 
@@ -1932,7 +1932,7 @@
             };
 
             const timeUpdateHandler = () => {
-                if (audio.duration) {
+                if (audio.duration && !isNaN(audio.duration)) {
                     const progress = (audio.currentTime / audio.duration) * 100;
                     progressFill.style.width = `${progress}%`;
                     currentTimeEl.textContent = formatTime(audio.currentTime);
@@ -1949,8 +1949,10 @@
             const endedHandler = () => {
                 isPlaying = false;
                 playPauseBtn.textContent = '▶';
-                progressFill.style.width = '100%';
-                currentTimeEl.textContent = durationEl.textContent;
+                if (audio.duration && !isNaN(audio.duration)) {
+                    progressFill.style.width = '100%';
+                    currentTimeEl.textContent = formatTime(audio.duration);
+                }
             };
 
             // Add event listeners
@@ -1965,17 +1967,18 @@
                 ended: endedHandler
             };
 
-            // Play/pause functionality
+            // Simple play/pause functionality like your working code
             playPauseBtn.addEventListener('click', () => {
                 if (isPlaying) {
                     audio.pause();
                     playPauseBtn.textContent = '▶';
                 } else {
-                    // Set source only when playing to avoid preloading
-                    if (!audio.src) {
-                        audio.src = fileUrl;
-                    }
-                    audio.play().catch(e => console.warn('Audio play failed:', e));
+                    audio.play().catch(e => {
+                        console.warn('Audio play failed:', e);
+                        // Simple fallback - just reset state
+                        playPauseBtn.textContent = '▶';
+                        isPlaying = false;
+                    });
                     playPauseBtn.textContent = '⏸';
                 }
                 isPlaying = !isPlaying;
@@ -1999,8 +2002,6 @@
                     try {
                         audio.pause();
                         audio.currentTime = 0;
-                        audio.src = '';
-                        audio.load();
                         
                         // Remove event listeners
                         if (card._audioHandlers) {
@@ -2101,23 +2102,6 @@
             });
 
             return card;
-        }
-
-        // Tab switching function
-        function switchToTab(tabName) {
-            // Remove active class from all tabs and contents
-            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        
-            // Add active class to clicked tab
-            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
-            document.getElementById(tabName).classList.add('active');
-            
-            // Scroll to top of the container when switching tabs
-            const container = document.querySelector('.container');
-            if (container) {
-                container.scrollTop = 0;
-            }
         }
 
         // Book Reader functionality with PDF.js fallback
@@ -2238,11 +2222,7 @@
             }
         }
 
-        closeReader.addEventListener('click', () => {
-            bookReader.classList.remove('active');
-            readerContent.innerHTML = '';
-        });
-        let currentPdf = null;
+        
 
         async function openBookReaderWithFallback(title, fileUrl, bookId) {
             // Clean up previous PDF first
