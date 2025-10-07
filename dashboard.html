@@ -1145,6 +1145,7 @@
         let allVideoResources = [];
         let currentVideoPage = 1;
         const videosPerPage = 12;
+        let currentPdf = null;
 
         document.addEventListener('DOMContentLoaded', async () => {
             const rowId = localStorage.getItem('userRowId');
@@ -2103,23 +2104,6 @@
             return card;
         }
 
-        // Tab switching function
-        function switchToTab(tabName) {
-            // Remove active class from all tabs and contents
-            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        
-            // Add active class to clicked tab
-            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
-            document.getElementById(tabName).classList.add('active');
-            
-            // Scroll to top of the container when switching tabs
-            const container = document.querySelector('.container');
-            if (container) {
-                container.scrollTop = 0;
-            }
-        }
-
         // Book Reader functionality with PDF.js fallback
         const bookReader = document.getElementById('bookReader');
         const readerTitle = document.getElementById('readerTitle');
@@ -2238,11 +2222,7 @@
             }
         }
 
-        closeReader.addEventListener('click', () => {
-            bookReader.classList.remove('active');
-            readerContent.innerHTML = '';
-        });
-        let currentPdf = null;
+        
 
         async function openBookReaderWithFallback(title, fileUrl, bookId) {
             // Clean up previous PDF first
