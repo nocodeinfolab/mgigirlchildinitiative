@@ -1716,73 +1716,117 @@
 
         // Function to load video only when clicked
         function loadVideoOnClick(card, fileUrl, resourceId) {
-            const videoContainer = card.querySelector('.video-player');
-            const thumbnail = card.querySelector('.video-thumbnail');
-        
-            // Save the resource info so we can reuse it on collapse
-            card.dataset.fileUrl = fileUrl;
-            card.dataset.resourceId = resourceId;
-        
+            // Prevent multiple expansions
             if (card.classList.contains('expanded')) return;
-        
-            // --- Freeze the height ---
-            const prevHeight = card.getBoundingClientRect().height;
-            card.style.height = prevHeight + 'px';
-            card.style.transition = 'height 0.25s ease, box-shadow 0.25s ease';
-        
-            // --- Hide content & thumbnail ---
-            if (thumbnail) thumbnail.style.display = 'none';
-            const content = card.querySelector('.card-content');
-            if (content) {
-                content.style.opacity = '0';
-                content.style.transform = 'translateY(-8px)';
-                setTimeout(() => (content.style.display = 'none'), 260);
+            
+            // Clean up any existing video first
+            if (card._currentVideo) {
+                collapseVideo(card);
+                // Small delay to ensure cleanup completes
+                setTimeout(() => setupNewVideo(), 100);
+                return;
             }
-        
-            card.classList.add('expanded');
-            videoContainer.innerHTML = '';
-        
-            // --- Close button ---
-            const closeBtn = document.createElement('button');
-            closeBtn.className = 'video-close-btn';
-            closeBtn.title = 'Close';
-            closeBtn.innerHTML = '&times;';
-            closeBtn.addEventListener('click', () => collapseVideo(card));
-            videoContainer.appendChild(closeBtn);
-        
-            // --- Video setup ---
-            const video = document.createElement('video');
-            video.controls = true;
-            video.autoplay = true;
-            video.playsInline = true;
-            video.innerHTML = `<source src="${fileUrl}" type="video/mp4">Your browser does not support the video tag.`;
-            videoContainer.appendChild(video);
-            card._currentVideo = video;
-        
-            // --- Progress tracking ---
-            let progressTracked = false;
-            video.addEventListener('timeupdate', () => {
-                if (video.duration) {
-                    const progress = (video.currentTime / video.duration) * 100;
-                    if (progress >= 80 && !progressTracked && !completedResources.has(resourceId)) {
-                        progressTracked = true;
-                        completedResources.add(resourceId);
-                        updateVideoProgress(resourceId);
-                    }
+            
+            setupNewVideo();
+
+            function setupNewVideo() {
+                const videoContainer = card.querySelector('.video-player');
+                const thumbnail = card.querySelector('.video-thumbnail');
+
+                // Save the resource info
+                card.dataset.fileUrl = fileUrl;
+                card.dataset.resourceId = resourceId;
+
+                // --- Freeze the height ---
+                const prevHeight = card.getBoundingClientRect().height;
+                card.style.height = prevHeight + 'px';
+                card.style.transition = 'height 0.25s ease, box-shadow 0.25s ease';
+
+                // --- Hide content & thumbnail ---
+                if (thumbnail) thumbnail.style.display = 'none';
+                const content = card.querySelector('.card-content');
+                if (content) {
+                    content.style.opacity = '0';
+                    content.style.transform = 'translateY(-8px)';
+                    setTimeout(() => (content.style.display = 'none'), 260);
                 }
-            });
+
+                card.classList.add('expanded');
+                videoContainer.innerHTML = '';
+
+                // --- Close button ---
+                const closeBtn = document.createElement('button');
+                closeBtn.className = 'video-close-btn';
+                closeBtn.title = 'Close';
+                closeBtn.innerHTML = '&times;';
+                closeBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    collapseVideo(card);
+                });
+                videoContainer.appendChild(closeBtn);
+
+                // --- Video setup ---
+                const video = document.createElement('video');
+                video.controls = true;
+                video.autoplay = true;
+                video.playsInline = true;
+                video.preload = 'metadata'; // Only load metadata initially
+                video.innerHTML = `<source src="${fileUrl}" type="video/mp4">Your browser does not support the video tag.`;
+                videoContainer.appendChild(video);
+                card._currentVideo = video;
+
+                // --- Progress tracking with proper cleanup ---
+                let progressTracked = false;
+                
+                const timeUpdateHandler = () => {
+                    if (video.duration) {
+                        const progress = (video.currentTime / video.duration) * 100;
+                        if (progress >= 80 && !progressTracked && !completedResources.has(resourceId)) {
+                            progressTracked = true;
+                            completedResources.add(resourceId);
+                            updateVideoProgress(resourceId);
+                        }
+                    }
+                };
+                
+                video.addEventListener('timeupdate', timeUpdateHandler);
+                card._timeUpdateHandler = timeUpdateHandler; // Store for cleanup
+            }
         }
         
         function collapseVideo(card) {
             const videoContainer = card.querySelector('.video-player');
             const content = card.querySelector('.card-content');
-        
-            // --- Stop and remove video ---
+
+            // --- Stop and cleanup video ---
             const video = card._currentVideo;
             if (video) {
-                try { video.pause(); } catch (e) {}
+                try { 
+                    video.pause(); 
+                    video.currentTime = 0; // Reset position
+                    video.src = ''; // Clear source to stop loading
+                    video.load(); // Triggers cleanup
+                } catch (e) {
+                    console.warn('Error cleaning up video:', e);
+                }
+                
+                // Remove event listeners
+                video.removeEventListener('timeupdate', card._timeUpdateHandler);
+                delete card._timeUpdateHandler;
+                
+                // Remove from DOM
+                if (video.parentNode === videoContainer) {
+                    videoContainer.removeChild(video);
+                }
+                delete card._currentVideo;
             }
-        
+
+            // Remove close button
+            const closeBtn = videoContainer.querySelector('.video-close-btn');
+            if (closeBtn && closeBtn.parentNode === videoContainer) {
+                videoContainer.removeChild(closeBtn);
+            }
+
             // --- Restore thumbnail and reattach click handler ---
             const fileUrl = card.dataset.fileUrl;
             const resourceId = card.dataset.resourceId;
@@ -1791,7 +1835,7 @@
             if (thumbnail) {
                 thumbnail.addEventListener('click', () => loadVideoOnClick(card, fileUrl, resourceId));
             }
-        
+
             // --- Restore text content ---
             if (content) {
                 content.style.display = '';
@@ -1800,11 +1844,10 @@
                     content.style.transform = 'translateY(0)';
                 }, 20);
             }
-        
+
             // --- Reset card state ---
             card.classList.remove('expanded');
             card.style.height = '';
-            delete card._currentVideo;
         }
     
         // Keep expanded card heights reasonable if the window is resized while expanded
@@ -1816,7 +1859,8 @@
         });
 
 
-        // Helper function to create an audio card with player controls
+        
+        // Helper function to create an audio card with memory management
         function createAudioCard({ topic, description, author, image, file, resourceType, featured, resourceId }) {
             const imageUrl = Array.isArray(image) && image.length > 0
                 ? image[0].url
@@ -1861,15 +1905,19 @@
                 </div>
             `;
 
-            // Add audio player functionality
+            // Audio player with cleanup
             const playPauseBtn = card.querySelector('.play-pause-btn');
             const progressFill = card.querySelector('.progress-fill');
             const currentTimeEl = card.querySelector('.current-time');
             const durationEl = card.querySelector('.duration');
             
-            const audio = new Audio(fileUrl);
+            const audio = new Audio();
+            audio.preload = 'metadata'; // Only load metadata
             let isPlaying = false;
             let progressTracked = false;
+
+            // Store audio reference for cleanup
+            card._audioElement = audio;
 
             // Format time function
             function formatTime(seconds) {
@@ -1878,23 +1926,44 @@
                 return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
             }
 
-            // Update progress bar and time
-            audio.addEventListener('loadedmetadata', () => {
+            // Event handlers
+            const loadedMetadataHandler = () => {
                 durationEl.textContent = formatTime(audio.duration);
-            });
+            };
 
-            audio.addEventListener('timeupdate', () => {
-                const progress = (audio.currentTime / audio.duration) * 100;
-                progressFill.style.width = `${progress}%`;
-                currentTimeEl.textContent = formatTime(audio.currentTime);
+            const timeUpdateHandler = () => {
+                if (audio.duration) {
+                    const progress = (audio.currentTime / audio.duration) * 100;
+                    progressFill.style.width = `${progress}%`;
+                    currentTimeEl.textContent = formatTime(audio.currentTime);
 
-                // Track progress when 80% listened
-                if (progress >= 80 && !progressTracked && !completedResources.has(resourceId)) {
-                    progressTracked = true;
-                    completedResources.add(resourceId);
-                    updateAudioProgress(resourceId);
+                    // Track progress when 80% listened
+                    if (progress >= 80 && !progressTracked && !completedResources.has(resourceId)) {
+                        progressTracked = true;
+                        completedResources.add(resourceId);
+                        updateAudioProgress(resourceId);
+                    }
                 }
-            });
+            };
+
+            const endedHandler = () => {
+                isPlaying = false;
+                playPauseBtn.textContent = '▶';
+                progressFill.style.width = '100%';
+                currentTimeEl.textContent = durationEl.textContent;
+            };
+
+            // Add event listeners
+            audio.addEventListener('loadedmetadata', loadedMetadataHandler);
+            audio.addEventListener('timeupdate', timeUpdateHandler);
+            audio.addEventListener('ended', endedHandler);
+
+            // Store handlers for cleanup
+            card._audioHandlers = {
+                loadedmetadata: loadedMetadataHandler,
+                timeupdate: timeUpdateHandler,
+                ended: endedHandler
+            };
 
             // Play/pause functionality
             playPauseBtn.addEventListener('click', () => {
@@ -1902,22 +1971,95 @@
                     audio.pause();
                     playPauseBtn.textContent = '▶';
                 } else {
-                    audio.play();
+                    // Set source only when playing to avoid preloading
+                    if (!audio.src) {
+                        audio.src = fileUrl;
+                    }
+                    audio.play().catch(e => console.warn('Audio play failed:', e));
                     playPauseBtn.textContent = '⏸';
                 }
                 isPlaying = !isPlaying;
             });
 
-            // Reset when audio ends
-            audio.addEventListener('ended', () => {
-                isPlaying = false;
-                playPauseBtn.textContent = '▶';
-                progressFill.style.width = '100%';
-                currentTimeEl.textContent = durationEl.textContent;
-            });
-
             return card;
         }
+        // Global media cleanup function
+        function cleanupAllMedia() {
+            console.log('🧹 Cleaning up all media elements...');
+            
+            // Clean up expanded videos
+            document.querySelectorAll('.video-card.expanded').forEach(card => {
+                collapseVideo(card);
+            });
+            
+            // Clean up audio players
+            document.querySelectorAll('.audio-card').forEach(card => {
+                const audio = card._audioElement;
+                if (audio) {
+                    try {
+                        audio.pause();
+                        audio.currentTime = 0;
+                        audio.src = '';
+                        audio.load();
+                        
+                        // Remove event listeners
+                        if (card._audioHandlers) {
+                            Object.entries(card._audioHandlers).forEach(([event, handler]) => {
+                                audio.removeEventListener(event, handler);
+                            });
+                            delete card._audioHandlers;
+                        }
+                        
+                        delete card._audioElement;
+                    } catch (e) {
+                        console.warn('Error cleaning up audio:', e);
+                    }
+                }
+            });
+            
+            // Clean up PDF reader if open
+            const bookReader = document.getElementById('bookReader');
+            if (bookReader && bookReader.classList.contains('active')) {
+                bookReader.classList.remove('active');
+                document.getElementById('readerContent').innerHTML = '';
+            }
+        }
+
+        // Call cleanup when switching tabs
+        function switchToTab(tabName) {
+            // Clean up media before switching
+            cleanupAllMedia();
+            
+            // Remove active class from all tabs and contents
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+            // Add active class to clicked tab
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+            
+            // Scroll to top of the container when switching tabs
+            const container = document.querySelector('.container');
+            if (container) {
+                container.scrollTop = 0;
+            }
+        }
+        // Clean up when page becomes hidden
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                cleanupAllMedia();
+            }
+        });
+
+        // Clean up before page unload
+        window.addEventListener('beforeunload', () => {
+            cleanupAllMedia();
+        });
+
+        // Clean up on page hide (for mobile)
+        window.addEventListener('pagehide', () => {
+            cleanupAllMedia();
+        });
 
         // Helper function to create a book card
         function createBookCard({ topic, description, author, image, file, resourceType, featured, resourceId }) {
@@ -1990,33 +2132,6 @@
 
         let currentBookId = null;
         let progressTracked = false;
-
-        async function openBookReaderWithFallback(title, fileUrl, bookId) {
-            currentBookId = bookId;
-            progressTracked = false;
-            
-            readerTitle.textContent = title;
-            completionStatus.textContent = '';
-            
-            // Use the proxy URL instead of direct S3 URL
-            const proxyUrl = `https://mgi-login-worker.stevechikeabia.workers.dev/proxy-pdf/${encodeURIComponent(fileUrl)}`;
-            
-            try {
-                readerContent.innerHTML = '<div class="loading">Loading PDF...</div>';
-                bookReader.classList.add('active');
-                
-                const loadingTask = pdfjsLib.getDocument(proxyUrl);
-                const pdf = await loadingTask.promise;
-                
-                // If we get here, PDF.js worked - set up the PDF reader
-                await setupPdfReader(pdf, fileUrl, bookId);
-                
-            } catch (error) {
-                console.log('PDF.js failed, falling back to Google Docs viewer:', error);
-                // Use Google Docs viewer as fallback
-                useGoogleDocsViewer(title, fileUrl, bookId);
-            }
-        }
 
         async function setupPdfReader(pdf, fileUrl, bookId) {
             let currentPageNum = 1;
@@ -2124,6 +2239,59 @@
         }
 
         closeReader.addEventListener('click', () => {
+            bookReader.classList.remove('active');
+            readerContent.innerHTML = '';
+        });
+        let currentPdf = null;
+
+        async function openBookReaderWithFallback(title, fileUrl, bookId) {
+            // Clean up previous PDF first
+            if (currentPdf) {
+                try {
+                    currentPdf.destroy();
+                } catch (e) {
+                    console.warn('Error cleaning up previous PDF:', e);
+                }
+                currentPdf = null;
+            }
+            
+            currentBookId = bookId;
+            progressTracked = false;
+            
+            readerTitle.textContent = title;
+            completionStatus.textContent = '';
+            
+            // Use the proxy URL instead of direct S3 URL
+            const proxyUrl = `https://mgi-login-worker.stevechikeabia.workers.dev/proxy-pdf/${encodeURIComponent(fileUrl)}`;
+            
+            try {
+                readerContent.innerHTML = '<div class="loading">Loading PDF...</div>';
+                bookReader.classList.add('active');
+                
+                const loadingTask = pdfjsLib.getDocument(proxyUrl);
+                const pdf = await loadingTask.promise;
+                currentPdf = pdf; // Store for cleanup
+                
+                // If we get here, PDF.js worked - set up the PDF reader
+                await setupPdfReader(pdf, fileUrl, bookId);
+                
+            } catch (error) {
+                console.log('PDF.js failed, falling back to Google Docs viewer:', error);
+                // Use Google Docs viewer as fallback
+                useGoogleDocsViewer(title, fileUrl, bookId);
+            }
+        }
+
+        // Update closeReader to cleanup PDF
+        closeReader.addEventListener('click', () => {
+            if (currentPdf) {
+                try {
+                    currentPdf.destroy();
+                } catch (e) {
+                    console.warn('Error cleaning up PDF:', e);
+                }
+                currentPdf = null;
+            }
             bookReader.classList.remove('active');
             readerContent.innerHTML = '';
         });
