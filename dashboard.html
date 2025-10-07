@@ -1237,67 +1237,55 @@
         });
         
         // --- Fetch resources for Books, Videos and Audio ---
+        // Global variables for pagination
+        let currentBookPage = 1;
+        let currentAudioPage = 1;
+        const resourcesPerPage = 12;
+        let hasMoreBooks = true;
+        let hasMoreAudio = true;
+        
+        // Updated loadResources function
         async function loadResources() {
             const booksContainer = document.querySelector('#books .content-grid');
             const audioContainer = document.querySelector('#audio .content-grid');
             const featuredContainer = document.querySelector('.featured-grid');
-
+        
             // Clear existing placeholder cards
             booksContainer.innerHTML = '';
             audioContainer.innerHTML = '';
             featuredContainer.innerHTML = '';
-
+        
             try {
-                const response = await fetch('https://mgi-login-worker.stevechikeabia.workers.dev/get_resources');
-                if (!response.ok) throw new Error('Failed to fetch resources');
-
-                const resources = await response.json();
-                console.log('✅ Resources fetched:', resources);
-
-                // Separate videos for pagination
-                allVideoResources = resources.filter(r => r.resourceType === 'Video');
+                // Reset pagination states
+                currentBookPage = 1;
+                currentAudioPage = 1;
+                hasMoreBooks = true;
+                hasMoreAudio = true;
+        
+                // Load featured resources (limited to 3)
+                const featuredResponse = await fetch('https://mgi-login-worker.stevechikeabia.workers.dev/get_resources?featured=true&limit=3');
+                if (!featuredResponse.ok) throw new Error('Failed to fetch featured resources');
+                const featuredData = await featuredResponse.json();
                 
-                // Load first page of videos
-                loadVideoPage(1);
-
-                // Load other resources
-                const bookResources = resources.filter(r => r.resourceType === 'Book');
-                const audioResources = resources.filter(r => r.resourceType === 'Audio');
-                const featuredResources = resources.filter(r => r.featured && r.featured.toLowerCase().includes('featured'));
-
-                // Limit featured to 3
-                const limitedFeatured = featuredResources.slice(0, 3);
-
                 // Add featured cards
-                if (limitedFeatured.length > 0) {
-                    limitedFeatured.forEach(resource => {
+                if (featuredData.resources && featuredData.resources.length > 0) {
+                    featuredData.resources.forEach(resource => {
                         const card = createFeaturedCard(resource);
                         featuredContainer.appendChild(card);
                     });
                 } else {
                     featuredContainer.innerHTML = '<p>No featured resources available this week.</p>';
                 }
-
-                // Add book cards
-                if (bookResources.length > 0) {
-                    bookResources.forEach(resource => {
-                        const card = createBookCard(resource);
-                        booksContainer.appendChild(card);
-                    });
-                } else {
-                    booksContainer.innerHTML = '<p>No books available.</p>';
-                }
-
-                // Add audio cards
-                if (audioResources.length > 0) {
-                    audioResources.forEach(resource => {
-                        const card = createAudioCard(resource);
-                        audioContainer.appendChild(card);
-                    });
-                } else {
-                    audioContainer.innerHTML = '<p>No audio resources available.</p>';
-                }
-
+        
+                // Load first page of books
+                await loadBookPage(1);
+                
+                // Load first page of audio
+                await loadAudioPage(1);
+        
+                // Load first page of videos (existing function)
+                loadVideoPage(1);
+        
             } catch (error) {
                 console.error('❌ Error loading resources:', error);
                 booksContainer.innerHTML = '<p style="color:red;">Failed to load books.</p>';
@@ -1305,34 +1293,215 @@
                 featuredContainer.innerHTML = '<p style="color:red;">Failed to load featured resources.</p>';
             }
         }
-
-        // Video pagination
-        function loadVideoPage(page) {
-            const videosContainer = document.querySelector('#videos .content-grid');
+        
+        // Book pagination function
+        async function loadBookPage(page) {
+            const booksContainer = document.querySelector('#books .content-grid');
             
-            // Clear container only for first page
-            if (page === 1) {
-                videosContainer.innerHTML = '';
+            // Show loading indicator for subsequent pages
+            if (page > 1) {
+                const loadingIndicator = document.createElement('div');
+                loadingIndicator.className = 'loading';
+                loadingIndicator.textContent = 'Loading more books...';
+                booksContainer.appendChild(loadingIndicator);
             }
-            
-            const startIndex = (page - 1) * videosPerPage;
-            const endIndex = startIndex + videosPerPage;
-            const pageVideos = allVideoResources.slice(startIndex, endIndex);
-
-            pageVideos.forEach(resource => {
-                const card = createVideoCard(resource);
-                videosContainer.appendChild(card);
-            });
-
-            currentVideoPage = page;
-            
-            // Add "Load More" button if there are more videos
-            if (endIndex < allVideoResources.length) {
-                addLoadMoreButton();
+        
+            try {
+                const response = await fetch(`https://mgi-login-worker.stevechikeabia.workers.dev/get_resources?type=Book&page=${page}&limit=${resourcesPerPage}`);
+                if (!response.ok) throw new Error('Failed to fetch books');
+                
+                const data = await response.json();
+                
+                // Remove loading indicator
+                const loadingIndicator = booksContainer.querySelector('.loading');
+                if (loadingIndicator) loadingIndicator.remove();
+        
+                // Clear container only for first page
+                if (page === 1) {
+                    booksContainer.innerHTML = '';
+                }
+                
+                // Add book cards
+                if (data.resources && data.resources.length > 0) {
+                    data.resources.forEach(resource => {
+                        const card = createBookCard(resource);
+                        booksContainer.appendChild(card);
+                    });
+                } else if (page === 1) {
+                    booksContainer.innerHTML = '<p>No books available.</p>';
+                }
+        
+                // Update pagination state
+                hasMoreBooks = data.pagination.hasNext;
+                currentBookPage = page;
+                
+                // Add "Load More" button if there are more books
+                if (hasMoreBooks) {
+                    addLoadMoreBooksButton();
+                }
+        
+            } catch (error) {
+                console.error('❌ Error loading books page:', error);
+                const loadingIndicator = booksContainer.querySelector('.loading');
+                if (loadingIndicator) loadingIndicator.remove();
+                
+                if (page === 1) {
+                    booksContainer.innerHTML = '<p style="color:red;">Failed to load books.</p>';
+                }
             }
         }
-
-        function addLoadMoreButton() {
+        
+        // Audio pagination function
+        async function loadAudioPage(page) {
+            const audioContainer = document.querySelector('#audio .content-grid');
+            
+            // Show loading indicator for subsequent pages
+            if (page > 1) {
+                const loadingIndicator = document.createElement('div');
+                loadingIndicator.className = 'loading';
+                loadingIndicator.textContent = 'Loading more audio...';
+                audioContainer.appendChild(loadingIndicator);
+            }
+        
+            try {
+                const response = await fetch(`https://mgi-login-worker.stevechikeabia.workers.dev/get_resources?type=Audio&page=${page}&limit=${resourcesPerPage}`);
+                if (!response.ok) throw new Error('Failed to fetch audio');
+                
+                const data = await response.json();
+                
+                // Remove loading indicator
+                const loadingIndicator = audioContainer.querySelector('.loading');
+                if (loadingIndicator) loadingIndicator.remove();
+        
+                // Clear container only for first page
+                if (page === 1) {
+                    audioContainer.innerHTML = '';
+                }
+                
+                // Add audio cards
+                if (data.resources && data.resources.length > 0) {
+                    data.resources.forEach(resource => {
+                        const card = createAudioCard(resource);
+                        audioContainer.appendChild(card);
+                    });
+                } else if (page === 1) {
+                    audioContainer.innerHTML = '<p>No audio resources available.</p>';
+                }
+        
+                // Update pagination state
+                hasMoreAudio = data.pagination.hasNext;
+                currentAudioPage = page;
+                
+                // Add "Load More" button if there are more audio resources
+                if (hasMoreAudio) {
+                    addLoadMoreAudioButton();
+                }
+        
+            } catch (error) {
+                console.error('❌ Error loading audio page:', error);
+                const loadingIndicator = audioContainer.querySelector('.loading');
+                if (loadingIndicator) loadingIndicator.remove();
+                
+                if (page === 1) {
+                    audioContainer.innerHTML = '<p style="color:red;">Failed to load audio resources.</p>';
+                }
+            }
+        }
+        
+        // Video pagination function (updated to use API pagination)
+        async function loadVideoPage(page) {
+            const videosContainer = document.querySelector('#videos .content-grid');
+            
+            // Show loading indicator for subsequent pages
+            if (page > 1) {
+                const loadingIndicator = document.createElement('div');
+                loadingIndicator.className = 'loading';
+                loadingIndicator.textContent = 'Loading more videos...';
+                videosContainer.appendChild(loadingIndicator);
+            }
+        
+            try {
+                const response = await fetch(`https://mgi-login-worker.stevechikeabia.workers.dev/get_resources?type=Video&page=${page}&limit=${videosPerPage}`);
+                if (!response.ok) throw new Error('Failed to fetch videos');
+                
+                const data = await response.json();
+                
+                // Remove loading indicator
+                const loadingIndicator = videosContainer.querySelector('.loading');
+                if (loadingIndicator) loadingIndicator.remove();
+        
+                // Clear container only for first page
+                if (page === 1) {
+                    videosContainer.innerHTML = '';
+                    allVideoResources = []; // Reset global array
+                }
+                
+                // Add video cards
+                if (data.resources && data.resources.length > 0) {
+                    data.resources.forEach(resource => {
+                        const card = createVideoCard(resource);
+                        videosContainer.appendChild(card);
+                        allVideoResources.push(resource); // Keep track for search/filtering
+                    });
+                } else if (page === 1) {
+                    videosContainer.innerHTML = '<p>No videos available.</p>';
+                }
+        
+                // Update pagination state
+                currentVideoPage = page;
+                
+                // Add "Load More" button if there are more videos
+                if (data.pagination.hasNext) {
+                    addLoadMoreVideosButton();
+                }
+        
+            } catch (error) {
+                console.error('❌ Error loading videos page:', error);
+                const loadingIndicator = videosContainer.querySelector('.loading');
+                if (loadingIndicator) loadingIndicator.remove();
+                
+                if (page === 1) {
+                    videosContainer.innerHTML = '<p style="color:red;">Failed to load videos.</p>';
+                }
+            }
+        }
+        
+        // Load More button functions
+        function addLoadMoreBooksButton() {
+            const booksContainer = document.querySelector('#books .content-grid');
+            
+            // Remove existing load more button
+            const existingButton = booksContainer.querySelector('.load-more-btn');
+            if (existingButton) existingButton.remove();
+            
+            const loadMoreBtn = document.createElement('button');
+            loadMoreBtn.className = 'load-more-btn';
+            loadMoreBtn.innerHTML = 'Load More Books';
+            loadMoreBtn.addEventListener('click', () => {
+                loadBookPage(currentBookPage + 1);
+            });
+            
+            booksContainer.appendChild(loadMoreBtn);
+        }
+        
+        function addLoadMoreAudioButton() {
+            const audioContainer = document.querySelector('#audio .content-grid');
+            
+            // Remove existing load more button
+            const existingButton = audioContainer.querySelector('.load-more-btn');
+            if (existingButton) existingButton.remove();
+            
+            const loadMoreBtn = document.createElement('button');
+            loadMoreBtn.className = 'load-more-btn';
+            loadMoreBtn.innerHTML = 'Load More Audio';
+            loadMoreBtn.addEventListener('click', () => {
+                loadAudioPage(currentAudioPage + 1);
+            });
+            
+            audioContainer.appendChild(loadMoreBtn);
+        }
+        
+        function addLoadMoreVideosButton() {
             const videosContainer = document.querySelector('#videos .content-grid');
             
             // Remove existing load more button
@@ -1348,6 +1517,8 @@
             
             videosContainer.appendChild(loadMoreBtn);
         }
+
+        
 
         // Helper function to create a featured card with smart navigation
         function createFeaturedCard({ topic, description, author, image, file, resourceType, featured, resourceId }) {
