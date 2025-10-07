@@ -1136,120 +1136,1448 @@
         </div>
     </div>
 
-<script>
-    // Set PDF.js worker path
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    <script>
+        // Set PDF.js worker path
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-    // Global variables for resource management
-    const completedResources = new Set();
-    let allVideoResources = [];
-    let currentVideoPage = 1;
-    let currentBookPage = 1;
-    let currentAudioPage = 1;
-    const resourcesPerPage = 12;
-    const videosPerPage = 12;
-    let hasMoreBooks = true;
-    let hasMoreAudio = true;
-    let currentPdf = null;
-    let currentBookId = null;
-    let progressTracked = false;
+        // Global variables for resource management
+        const completedResources = new Set();
+        let allVideoResources = [];
+        let currentVideoPage = 1;
+        const videosPerPage = 12;
 
-    document.addEventListener('DOMContentLoaded', async () => {
-        const rowId = localStorage.getItem('userRowId');
-        const email = localStorage.getItem('userEmail');
+        document.addEventListener('DOMContentLoaded', async () => {
+            const rowId = localStorage.getItem('userRowId');
+            const email = localStorage.getItem('userEmail');
 
-        console.log('🟡 Checking stored credentials...');
-        console.log('Row ID from localStorage:', rowId);
-        console.log('Email from localStorage:', email);
+            console.log('🟡 Checking stored credentials...');
+            console.log('Row ID from localStorage:', rowId);
+            console.log('Email from localStorage:', email);
 
-        if (!rowId || !email) {
-            alert('Session expired. Please log in again.');
-            window.location.href = '/index.html';
-            return;
-        }
-
-        const welcomeName = document.getElementById('welcomeName');
-        const userDetails = document.getElementById('userDetails');
-
-        // Show temporary placeholder
-        welcomeName.textContent = 'Loading your profile...';
-        userDetails.textContent = '';
-
-        try {
-            // Make request to Cloudflare Worker
-            const response = await fetch(`https://mgi-login-worker.stevechikeabia.workers.dev/get_user_data?row_id=${rowId}`);
-
-            if (!response.ok) throw new Error('Network response was not ok');
-
-            const user = await response.json();
-            console.log('User data:', user);
-
-            // ✅ Update "Courses Completed" stat
-            const coursesCompletedEl = document.getElementById('coursesCompleted');
-            const courseProgress = user["Course Progress"] || 0;
-            
-            if (coursesCompletedEl) {
-                coursesCompletedEl.textContent = courseProgress;
-                console.log(`🎓 Courses Completed updated to: ${courseProgress}`);
-            } else {
-                console.warn('⚠️ coursesCompleted element not found in DOM.');
+            if (!rowId || !email) {
+                alert('Session expired. Please log in again.');
+                window.location.href = '/index.html';
+                return;
             }
 
-            // Fill in the dynamic welcome message
-            const firstName = user['First Name'] || 'User';
-            const lastName = user['Last Name'] || '';
-            const city = user['City'] || '—';
-            const dob = user['Date of Birth'] || '—';
-            const email = user['Email'] || '';
-            const fullName = user['Full Name'] || `${firstName} ${lastName}`.trim() || 'User';
-            const dateCreated = user['Date Created'] || '';
-            console.log('dateCreated value:', dateCreated);
+            const welcomeName = document.getElementById('welcomeName');
+            const userDetails = document.getElementById('userDetails');
 
-            let memberSince = 'Unknown';
-            if (dateCreated) {
-                const date = new Date(dateCreated);
-                if (!isNaN(date.getTime())) {
-                    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
-                                      'July', 'August', 'September', 'October', 'November', 'December'];
-                    memberSince = `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
+            // Show temporary placeholder
+            welcomeName.textContent = 'Loading your profile...';
+            userDetails.textContent = '';
+
+            try {
+                // Make request to Cloudflare Worker
+                const response = await fetch(`https://mgi-login-worker.stevechikeabia.workers.dev/get_user_data?row_id=${rowId}`);
+
+                if (!response.ok) throw new Error('Network response was not ok');
+
+                const user = await response.json();
+                console.log('User data:', user);
+
+                // ✅ Update "Courses Completed" stat
+                const coursesCompletedEl = document.getElementById('coursesCompleted');
+                const courseProgress = user["Course Progress"] || 0;
+                
+                if (coursesCompletedEl) {
+                    coursesCompletedEl.textContent = courseProgress;
+                    console.log(`🎓 Courses Completed updated to: ${courseProgress}`);
+                } else {
+                    console.warn('⚠️ coursesCompleted element not found in DOM.');
+                }
+
+
+                // Fill in the dynamic welcome message
+                const firstName = user['First Name'] || 'User';
+                const lastName = user['Last Name'] || '';
+                const city = user['City'] || '—';
+                const dob = user['Date of Birth'] || '—';
+                const email = user['Email'] || '';
+                const fullName = user['Full Name'] || `${firstName} ${lastName}`.trim() || 'User';
+                const dateCreated = user['Date Created'] || '';
+                console.log('dateCreated value:', dateCreated);
+
+                let memberSince = 'Unknown';
+                if (dateCreated) {
+                    const date = new Date(dateCreated);
+                    if (!isNaN(date.getTime())) {
+                        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                                          'July', 'August', 'September', 'October', 'November', 'December'];
+                        memberSince = `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
+                    }
+                }
+                
+                // Update profile header
+                document.querySelector('.profile-header h2').textContent = fullName;
+                document.querySelector('.profile-header p').textContent = `Member since ${memberSince}`;
+
+                welcomeName.textContent = `Welcome back, ${firstName}! ✨`;
+                
+                // Fetch progress stats elements
+                const statNumbers = document.querySelectorAll('.progress-stats .stat-number');
+
+                // Get values from Baserow
+                const bookProgress = user['Book Progress'] || 0;
+                const videoProgress = user['Video Progress'] || 0;
+
+                // Update UI
+                statNumbers[1].textContent = videoProgress; // Lessons Finished
+                statNumbers[2].textContent = bookProgress;  // Books Read
+                
+            } catch (error) {
+                console.error('Error fetching user data:', error);
+                welcomeName.textContent = 'Error loading profile 😞';
+                userDetails.textContent = 'Please try again later.';
+            }
+
+            // Load resources
+            await loadResources();
+            await loadCourses();
+        });
+        
+        // --- Fetch resources for Books, Videos and Audio ---
+        // Global variables for pagination
+        let currentBookPage = 1;
+        let currentAudioPage = 1;
+        const resourcesPerPage = 12;
+        let hasMoreBooks = true;
+        let hasMoreAudio = true;
+        
+        // Updated loadResources function
+        async function loadResources() {
+            const booksContainer = document.querySelector('#books .content-grid');
+            const audioContainer = document.querySelector('#audio .content-grid');
+            const featuredContainer = document.querySelector('.featured-grid');
+        
+            // Clear existing placeholder cards
+            booksContainer.innerHTML = '';
+            audioContainer.innerHTML = '';
+            featuredContainer.innerHTML = '';
+        
+            try {
+                // Reset pagination states
+                currentBookPage = 1;
+                currentAudioPage = 1;
+                hasMoreBooks = true;
+                hasMoreAudio = true;
+        
+                // Load featured resources (limited to 3)
+                const featuredResponse = await fetch('https://mgi-login-worker.stevechikeabia.workers.dev/get_resources?featured=true&limit=3');
+                if (!featuredResponse.ok) throw new Error('Failed to fetch featured resources');
+                const featuredData = await featuredResponse.json();
+                
+                // Add featured cards
+                if (featuredData.resources && featuredData.resources.length > 0) {
+                    featuredData.resources.forEach(resource => {
+                        const card = createFeaturedCard(resource);
+                        featuredContainer.appendChild(card);
+                    });
+                } else {
+                    featuredContainer.innerHTML = '<p>No featured resources available this week.</p>';
+                }
+        
+                // Load first page of books
+                await loadBookPage(1);
+                
+                // Load first page of audio
+                await loadAudioPage(1);
+        
+                // Load first page of videos (existing function)
+                loadVideoPage(1);
+        
+            } catch (error) {
+                console.error('❌ Error loading resources:', error);
+                booksContainer.innerHTML = '<p style="color:red;">Failed to load books.</p>';
+                audioContainer.innerHTML = '<p style="color:red;">Failed to load audio resources.</p>';
+                featuredContainer.innerHTML = '<p style="color:red;">Failed to load featured resources.</p>';
+            }
+        }
+        
+        // Book pagination function
+        async function loadBookPage(page) {
+            const booksContainer = document.querySelector('#books .content-grid');
+            
+            // Show loading indicator for subsequent pages
+            if (page > 1) {
+                const loadingIndicator = document.createElement('div');
+                loadingIndicator.className = 'loading';
+                loadingIndicator.textContent = 'Loading more books...';
+                booksContainer.appendChild(loadingIndicator);
+            }
+        
+            try {
+                const response = await fetch(`https://mgi-login-worker.stevechikeabia.workers.dev/get_resources?type=Book&page=${page}&limit=${resourcesPerPage}`);
+                if (!response.ok) throw new Error('Failed to fetch books');
+                
+                const data = await response.json();
+                
+                // Remove loading indicator
+                const loadingIndicator = booksContainer.querySelector('.loading');
+                if (loadingIndicator) loadingIndicator.remove();
+        
+                // Clear container only for first page
+                if (page === 1) {
+                    booksContainer.innerHTML = '';
+                }
+                
+                // Add book cards
+                if (data.resources && data.resources.length > 0) {
+                    data.resources.forEach(resource => {
+                        const card = createBookCard(resource);
+                        booksContainer.appendChild(card);
+                    });
+                } else if (page === 1) {
+                    booksContainer.innerHTML = '<p>No books available.</p>';
+                }
+        
+                // Update pagination state
+                hasMoreBooks = data.pagination.hasNext;
+                currentBookPage = page;
+                
+                // Add "Load More" button if there are more books
+                if (hasMoreBooks) {
+                    addLoadMoreBooksButton();
+                }
+        
+            } catch (error) {
+                console.error('❌ Error loading books page:', error);
+                const loadingIndicator = booksContainer.querySelector('.loading');
+                if (loadingIndicator) loadingIndicator.remove();
+                
+                if (page === 1) {
+                    booksContainer.innerHTML = '<p style="color:red;">Failed to load books.</p>';
                 }
             }
+        }
+        
+        // Audio pagination function
+        async function loadAudioPage(page) {
+            const audioContainer = document.querySelector('#audio .content-grid');
             
-            // Update profile header
-            document.querySelector('.profile-header h2').textContent = fullName;
-            document.querySelector('.profile-header p').textContent = `Member since ${memberSince}`;
-
-            welcomeName.textContent = `Welcome back, ${firstName}! ✨`;
+            // Show loading indicator for subsequent pages
+            if (page > 1) {
+                const loadingIndicator = document.createElement('div');
+                loadingIndicator.className = 'loading';
+                loadingIndicator.textContent = 'Loading more audio...';
+                audioContainer.appendChild(loadingIndicator);
+            }
+        
+            try {
+                const response = await fetch(`https://mgi-login-worker.stevechikeabia.workers.dev/get_resources?type=Audio&page=${page}&limit=${resourcesPerPage}`);
+                if (!response.ok) throw new Error('Failed to fetch audio');
+                
+                const data = await response.json();
+                
+                // Remove loading indicator
+                const loadingIndicator = audioContainer.querySelector('.loading');
+                if (loadingIndicator) loadingIndicator.remove();
+        
+                // Clear container only for first page
+                if (page === 1) {
+                    audioContainer.innerHTML = '';
+                }
+                
+                // Add audio cards
+                if (data.resources && data.resources.length > 0) {
+                    data.resources.forEach(resource => {
+                        const card = createAudioCard(resource);
+                        audioContainer.appendChild(card);
+                    });
+                } else if (page === 1) {
+                    audioContainer.innerHTML = '<p>No audio resources available.</p>';
+                }
+        
+                // Update pagination state
+                hasMoreAudio = data.pagination.hasNext;
+                currentAudioPage = page;
+                
+                // Add "Load More" button if there are more audio resources
+                if (hasMoreAudio) {
+                    addLoadMoreAudioButton();
+                }
+        
+            } catch (error) {
+                console.error('❌ Error loading audio page:', error);
+                const loadingIndicator = audioContainer.querySelector('.loading');
+                if (loadingIndicator) loadingIndicator.remove();
+                
+                if (page === 1) {
+                    audioContainer.innerHTML = '<p style="color:red;">Failed to load audio resources.</p>';
+                }
+            }
+        }
+        
+        // Video pagination function (updated to use API pagination)
+        async function loadVideoPage(page) {
+            const videosContainer = document.querySelector('#videos .content-grid');
             
-            // Fetch progress stats elements
-            const statNumbers = document.querySelectorAll('.progress-stats .stat-number');
-
-            // Get values from Baserow
-            const bookProgress = user['Book Progress'] || 0;
-            const videoProgress = user['Video Progress'] || 0;
-
-            // Update UI
-            statNumbers[1].textContent = videoProgress; // Lessons Finished
-            statNumbers[2].textContent = bookProgress;  // Books Read
+            // Show loading indicator for subsequent pages
+            if (page > 1) {
+                const loadingIndicator = document.createElement('div');
+                loadingIndicator.className = 'loading';
+                loadingIndicator.textContent = 'Loading more videos...';
+                videosContainer.appendChild(loadingIndicator);
+            }
+        
+            try {
+                const response = await fetch(`https://mgi-login-worker.stevechikeabia.workers.dev/get_resources?type=Video&page=${page}&limit=${videosPerPage}`);
+                if (!response.ok) throw new Error('Failed to fetch videos');
+                
+                const data = await response.json();
+                
+                // Remove loading indicator
+                const loadingIndicator = videosContainer.querySelector('.loading');
+                if (loadingIndicator) loadingIndicator.remove();
+        
+                // Clear container only for first page
+                if (page === 1) {
+                    videosContainer.innerHTML = '';
+                    allVideoResources = []; // Reset global array
+                }
+                
+                // Add video cards
+                if (data.resources && data.resources.length > 0) {
+                    data.resources.forEach(resource => {
+                        const card = createVideoCard(resource);
+                        videosContainer.appendChild(card);
+                        allVideoResources.push(resource); // Keep track for search/filtering
+                    });
+                } else if (page === 1) {
+                    videosContainer.innerHTML = '<p>No videos available.</p>';
+                }
+        
+                // Update pagination state
+                currentVideoPage = page;
+                
+                // Add "Load More" button if there are more videos
+                if (data.pagination.hasNext) {
+                    addLoadMoreVideosButton();
+                }
+        
+            } catch (error) {
+                console.error('❌ Error loading videos page:', error);
+                const loadingIndicator = videosContainer.querySelector('.loading');
+                if (loadingIndicator) loadingIndicator.remove();
+                
+                if (page === 1) {
+                    videosContainer.innerHTML = '<p style="color:red;">Failed to load videos.</p>';
+                }
+            }
+        }
+        
+        // Load More button functions
+        function addLoadMoreBooksButton() {
+            const booksContainer = document.querySelector('#books .content-grid');
             
-        } catch (error) {
-            console.error('Error fetching user data:', error);
-            welcomeName.textContent = 'Error loading profile 😞';
-            userDetails.textContent = 'Please try again later.';
+            // Remove existing load more button
+            const existingButton = booksContainer.querySelector('.load-more-btn');
+            if (existingButton) existingButton.remove();
+            
+            const loadMoreBtn = document.createElement('button');
+            loadMoreBtn.className = 'load-more-btn';
+            loadMoreBtn.innerHTML = 'Load More Books';
+            loadMoreBtn.addEventListener('click', () => {
+                loadBookPage(currentBookPage + 1);
+            });
+            
+            booksContainer.appendChild(loadMoreBtn);
+        }
+        
+        function addLoadMoreAudioButton() {
+            const audioContainer = document.querySelector('#audio .content-grid');
+            
+            // Remove existing load more button
+            const existingButton = audioContainer.querySelector('.load-more-btn');
+            if (existingButton) existingButton.remove();
+            
+            const loadMoreBtn = document.createElement('button');
+            loadMoreBtn.className = 'load-more-btn';
+            loadMoreBtn.innerHTML = 'Load More Audio';
+            loadMoreBtn.addEventListener('click', () => {
+                loadAudioPage(currentAudioPage + 1);
+            });
+            
+            audioContainer.appendChild(loadMoreBtn);
+        }
+        
+        function addLoadMoreVideosButton() {
+            const videosContainer = document.querySelector('#videos .content-grid');
+            
+            // Remove existing load more button
+            const existingButton = videosContainer.querySelector('.load-more-btn');
+            if (existingButton) existingButton.remove();
+            
+            const loadMoreBtn = document.createElement('button');
+            loadMoreBtn.className = 'load-more-btn';
+            loadMoreBtn.innerHTML = 'Load More Videos';
+            loadMoreBtn.addEventListener('click', () => {
+                loadVideoPage(currentVideoPage + 1);
+            });
+            
+            videosContainer.appendChild(loadMoreBtn);
         }
 
-        // Load resources
-        await loadResources();
-        await loadCourses();
+        
 
-        // Setup event listeners
-        setupEventListeners();
-    });
+        // Helper function to create a featured card with smart navigation
+        function createFeaturedCard({ topic, description, author, image, file, resourceType, featured, resourceId }) {
+            const imageUrl = Array.isArray(image) && image.length > 0
+                ? image[0].url
+                : 'https://via.placeholder.com/300x200?text=No+Image';
+            const fileUrl = Array.isArray(file) && file.length > 0 ? file[0].url : '';
+            const type = resourceType || 'Book';
+            const title = topic || 'Untitled';
+            const desc = description || 'No description available.';
+            const writer = author || 'Unknown Author';
 
-    // Setup all event listeners
-    function setupEventListeners() {
+            const card = document.createElement('div');
+            card.classList.add('card');
+            card.setAttribute('data-resource-type', type);
+            card.setAttribute('data-resource-id', resourceId);
+            card.setAttribute('data-file-url', fileUrl);
+            card.setAttribute('data-title', title);
+
+            // Determine featured tag
+            let tagLabel = '';
+            if (featured && featured.toLowerCase().includes('featured')) {
+                if (type === 'Video') tagLabel = 'POPULAR VIDEO';
+                else if (type === 'Book') tagLabel = 'FEATURED BOOK';
+                else if (type === 'Audio') tagLabel = 'FEATURED AUDIO';
+                else tagLabel = 'FEATURED RESOURCE';
+            }
+
+            card.innerHTML = `
+                <div class="card-image">
+                    <img src="${imageUrl}" alt="${title}" style="width:100%; height:100%; object-fit:cover;">
+                </div>
+                <div class="card-content">
+                    ${tagLabel ? `<span class="card-tag">${tagLabel}</span>` : ''}
+                    <h3 class="card-title">${title}</h3>
+                    <p class="card-description">${desc}</p>
+                    <small>By ${writer}</small>
+                </div>
+            `;
+
+            card.addEventListener('click', () => {
+                handleFeaturedCardClick(card);
+            });
+
+            return card;
+        }
+
+        
+        // Smart navigation for featured cards
+        function handleFeaturedCardClick(card) {
+            const resourceType = card.getAttribute('data-resource-type');
+            const resourceId = card.getAttribute('data-resource-id');
+            const fileUrl = card.getAttribute('data-file-url');
+            const title = card.getAttribute('data-title');
+        
+            // Navigate to appropriate tab
+            switch(resourceType) {
+                case 'Book':
+                    switchToTab('books');
+                    // Find and click the corresponding book card
+                    setTimeout(() => {
+                        const bookCard = document.querySelector(`.book-card[data-resource-id="${resourceId}"]`);
+                        if (bookCard) {
+                            bookCard.click();
+                        } else {
+                            openBookReaderWithFallback(title, fileUrl, resourceId);
+                        }
+                    }, 300);
+                    break;
+                    
+                // In the Video case of handleFeaturedCardClick, add this check:
+                case 'Video':
+                    switchToTab('videos');
+                    
+                    // Check if video is on current page, if not, load the appropriate page
+                    setTimeout(() => {
+                        let videoCard = document.querySelector(`.video-card[data-resource-id="${resourceId}"]`);
+                        
+                        // If video not found on current page, it might be on another page
+                        if (!videoCard) {
+                            // Find which page contains this video
+                            const videoIndex = allVideoResources.findIndex(video => video.resourceId === resourceId);
+                            if (videoIndex !== -1) {
+                                const targetPage = Math.floor(videoIndex / videosPerPage) + 1;
+                                loadVideoPage(targetPage);
+                                
+                                // Wait for page to load then find the card
+                                setTimeout(() => {
+                                    videoCard = document.querySelector(`.video-card[data-resource-id="${resourceId}"]`);
+                                    if (videoCard) {
+                                        scrollAndHighlightVideo(videoCard, resourceId);
+                                    }
+                                }, 500);
+                            }
+                        } else {
+                            scrollAndHighlightVideo(videoCard, resourceId);
+                        }
+                    }, 300);
+                    break;
+                
+                // Helper function for video scrolling and highlighting
+                function scrollAndHighlightVideo(videoCard, resourceId) {
+                    // Scroll to the video card
+                    videoCard.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'center',
+                        inline: 'nearest'
+                    });
+                    
+                    // Add highlight effect
+                    videoCard.style.transition = 'all 0.5s ease';
+                    videoCard.style.boxShadow = '0 0 0 3px var(--primary), 0 10px 25px rgba(0, 0, 0, 0.15)';
+                    
+                    // Remove highlight after 2 seconds
+                    setTimeout(() => {
+                        videoCard.style.boxShadow = 'var(--shadow)';
+                    }, 2000);
+                    
+                    // Load and play the video
+                    const thumbnail = videoCard.querySelector('.video-thumbnail');
+                    if (thumbnail) thumbnail.click();
+                }
+                    
+                case 'Audio':
+                    switchToTab('audio');
+                    // Find and scroll to the corresponding audio card
+                    setTimeout(() => {
+                        const audioCard = document.querySelector(`.audio-card[data-resource-id="${resourceId}"]`);
+                        if (audioCard) {
+                            // Scroll to the audio card
+                            audioCard.scrollIntoView({ 
+                                behavior: 'smooth', 
+                                block: 'center',
+                                inline: 'nearest'
+                            });
+                            
+                            // Add highlight effect
+                            audioCard.style.transition = 'all 0.5s ease';
+                            audioCard.style.boxShadow = '0 0 0 3px var(--primary), 0 10px 25px rgba(0, 0, 0, 0.15)';
+                            
+                            // Remove highlight after 2 seconds
+                            setTimeout(() => {
+                                audioCard.style.boxShadow = 'var(--shadow)';
+                            }, 2000);
+                            
+                            const playBtn = audioCard.querySelector('.play-pause-btn');
+                            if (playBtn) playBtn.click();
+                        }
+                    }, 300);
+                    break;
+            }
+        }
+
+        // Helper function to create a video card with lazy loading
+        function createVideoCard({ topic, description, author, image, file, resourceType, featured, resourceId }) {
+            const imageUrl = Array.isArray(image) && image.length > 0
+                ? image[0].url
+                : 'https://via.placeholder.com/300x200?text=No+Image';
+            const fileUrl = Array.isArray(file) && file.length > 0 ? file[0].url : '';
+            const type = resourceType || 'Video';
+            const title = topic || 'Untitled';
+            const desc = description || 'No description available.';
+            const writer = author || 'Unknown Author';
+
+            const card = document.createElement('div');
+            card.classList.add('video-card');
+            card.setAttribute('data-resource-id', resourceId);
+
+            // Determine featured tag
+            let tagLabel = '';
+            if (featured && featured.toLowerCase().includes('featured')) {
+                tagLabel = 'FEATURED VIDEO';
+            }
+
+            card.innerHTML = `
+                <div class="card-content">
+                    ${tagLabel ? `<span class="card-tag">${tagLabel}</span>` : ''}
+                    <h3 class="card-title">${title}</h3>
+                    <p class="card-description">${desc}</p>
+                    <small>By ${writer}</small>
+                </div>
+                <div class="video-player">
+                    <div class="video-thumbnail"></div>
+                </div>
+            `;
+
+            // Add click handler to load video only when clicked
+            const thumbnail = card.querySelector('.video-thumbnail');
+            thumbnail.addEventListener('click', function() {
+                loadVideoOnClick(card, fileUrl, resourceId);
+            });
+
+            return card;
+        }
+
+        // Function to load video only when clicked
+        function loadVideoOnClick(card, fileUrl, resourceId) {
+            // Prevent multiple expansions
+            if (card.classList.contains('expanded')) return;
+            
+            // Clean up any existing video first
+            if (card._currentVideo) {
+                collapseVideo(card);
+                // Small delay to ensure cleanup completes
+                setTimeout(() => setupNewVideo(), 100);
+                return;
+            }
+            
+            setupNewVideo();
+
+            function setupNewVideo() {
+                const videoContainer = card.querySelector('.video-player');
+                const thumbnail = card.querySelector('.video-thumbnail');
+
+                // Save the resource info
+                card.dataset.fileUrl = fileUrl;
+                card.dataset.resourceId = resourceId;
+
+                // --- Freeze the height ---
+                const prevHeight = card.getBoundingClientRect().height;
+                card.style.height = prevHeight + 'px';
+                card.style.transition = 'height 0.25s ease, box-shadow 0.25s ease';
+
+                // --- Hide content & thumbnail ---
+                if (thumbnail) thumbnail.style.display = 'none';
+                const content = card.querySelector('.card-content');
+                if (content) {
+                    content.style.opacity = '0';
+                    content.style.transform = 'translateY(-8px)';
+                    setTimeout(() => (content.style.display = 'none'), 260);
+                }
+
+                card.classList.add('expanded');
+                videoContainer.innerHTML = '';
+
+                // --- Close button ---
+                const closeBtn = document.createElement('button');
+                closeBtn.className = 'video-close-btn';
+                closeBtn.title = 'Close';
+                closeBtn.innerHTML = '&times;';
+                closeBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    collapseVideo(card);
+                });
+                videoContainer.appendChild(closeBtn);
+
+                // --- Video setup ---
+                const video = document.createElement('video');
+                video.controls = true;
+                video.autoplay = true;
+                video.playsInline = true;
+                video.preload = 'metadata'; // Only load metadata initially
+                video.innerHTML = `<source src="${fileUrl}" type="video/mp4">Your browser does not support the video tag.`;
+                videoContainer.appendChild(video);
+                card._currentVideo = video;
+
+                // --- Progress tracking with proper cleanup ---
+                let progressTracked = false;
+                
+                const timeUpdateHandler = () => {
+                    if (video.duration) {
+                        const progress = (video.currentTime / video.duration) * 100;
+                        if (progress >= 80 && !progressTracked && !completedResources.has(resourceId)) {
+                            progressTracked = true;
+                            completedResources.add(resourceId);
+                            updateVideoProgress(resourceId);
+                        }
+                    }
+                };
+                
+                video.addEventListener('timeupdate', timeUpdateHandler);
+                card._timeUpdateHandler = timeUpdateHandler; // Store for cleanup
+            }
+        }
+        
+        function collapseVideo(card) {
+            const videoContainer = card.querySelector('.video-player');
+            const content = card.querySelector('.card-content');
+
+            // --- Stop and cleanup video ---
+            const video = card._currentVideo;
+            if (video) {
+                try { 
+                    video.pause(); 
+                    video.currentTime = 0; // Reset position
+                    video.src = ''; // Clear source to stop loading
+                    video.load(); // Triggers cleanup
+                } catch (e) {
+                    console.warn('Error cleaning up video:', e);
+                }
+                
+                // Remove event listeners
+                video.removeEventListener('timeupdate', card._timeUpdateHandler);
+                delete card._timeUpdateHandler;
+                
+                // Remove from DOM
+                if (video.parentNode === videoContainer) {
+                    videoContainer.removeChild(video);
+                }
+                delete card._currentVideo;
+            }
+
+            // Remove close button
+            const closeBtn = videoContainer.querySelector('.video-close-btn');
+            if (closeBtn && closeBtn.parentNode === videoContainer) {
+                videoContainer.removeChild(closeBtn);
+            }
+
+            // --- Restore thumbnail and reattach click handler ---
+            const fileUrl = card.dataset.fileUrl;
+            const resourceId = card.dataset.resourceId;
+            videoContainer.innerHTML = `<div class="video-thumbnail"></div>`;
+            const thumbnail = videoContainer.querySelector('.video-thumbnail');
+            if (thumbnail) {
+                thumbnail.addEventListener('click', () => loadVideoOnClick(card, fileUrl, resourceId));
+            }
+
+            // --- Restore text content ---
+            if (content) {
+                content.style.display = '';
+                setTimeout(() => {
+                    content.style.opacity = '1';
+                    content.style.transform = 'translateY(0)';
+                }, 20);
+            }
+
+            // --- Reset card state ---
+            card.classList.remove('expanded');
+            card.style.height = '';
+        }
+    
+        // Keep expanded card heights reasonable if the window is resized while expanded
+        window.addEventListener('resize', () => {
+            document.querySelectorAll('.video-card.expanded').forEach(card => {
+                // set to current computed height to keep visual stability after resize
+                card.style.height = card.getBoundingClientRect().height + 'px';
+            });
+        });
+
+
+        
+        // Helper function to create an audio card with memory management
+        function createAudioCard({ topic, description, author, image, file, resourceType, featured, resourceId }) {
+            const imageUrl = Array.isArray(image) && image.length > 0
+                ? image[0].url
+                : 'https://via.placeholder.com/300x200?text=No+Image';
+            const fileUrl = Array.isArray(file) && file.length > 0 ? file[0].url : '';
+            const type = resourceType || 'Audio';
+            const title = topic || 'Untitled';
+            const desc = description || 'No description available.';
+            const writer = author || 'Unknown Author';
+
+            const card = document.createElement('div');
+            card.classList.add('audio-card');
+            card.setAttribute('data-resource-id', resourceId);
+
+            // Determine featured tag
+            let tagLabel = '';
+            if (featured && featured.toLowerCase().includes('featured')) {
+                tagLabel = 'FEATURED AUDIO';
+            }
+
+            card.innerHTML = `
+                <div class="audio-thumbnail">
+                    <div class="audio-icon">🎵</div>
+                </div>
+                <div class="card-content">
+                    ${tagLabel ? `<span class="card-tag">${tagLabel}</span>` : ''}
+                    <h3 class="card-title">${title}</h3>
+                    <p class="card-description">${desc}</p>
+                    <small>By ${writer}</small>
+                </div>
+                <div class="audio-controls">
+                    <button class="play-pause-btn">▶</button>
+                    <div class="audio-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 0%"></div>
+                        </div>
+                        <div class="audio-time">
+                            <span class="current-time">0:00</span>
+                            <span class="duration">0:00</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Audio player with cleanup
+            const playPauseBtn = card.querySelector('.play-pause-btn');
+            const progressFill = card.querySelector('.progress-fill');
+            const currentTimeEl = card.querySelector('.current-time');
+            const durationEl = card.querySelector('.duration');
+            
+            const audio = new Audio();
+            audio.preload = 'metadata'; // Only load metadata
+            let isPlaying = false;
+            let progressTracked = false;
+
+            // Store audio reference for cleanup
+            card._audioElement = audio;
+
+            // Format time function
+            function formatTime(seconds) {
+                const mins = Math.floor(seconds / 60);
+                const secs = Math.floor(seconds % 60);
+                return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+            }
+
+            // Event handlers
+            const loadedMetadataHandler = () => {
+                durationEl.textContent = formatTime(audio.duration);
+            };
+
+            const timeUpdateHandler = () => {
+                if (audio.duration) {
+                    const progress = (audio.currentTime / audio.duration) * 100;
+                    progressFill.style.width = `${progress}%`;
+                    currentTimeEl.textContent = formatTime(audio.currentTime);
+
+                    // Track progress when 80% listened
+                    if (progress >= 80 && !progressTracked && !completedResources.has(resourceId)) {
+                        progressTracked = true;
+                        completedResources.add(resourceId);
+                        updateAudioProgress(resourceId);
+                    }
+                }
+            };
+
+            const endedHandler = () => {
+                isPlaying = false;
+                playPauseBtn.textContent = '▶';
+                progressFill.style.width = '100%';
+                currentTimeEl.textContent = durationEl.textContent;
+            };
+
+            // Add event listeners
+            audio.addEventListener('loadedmetadata', loadedMetadataHandler);
+            audio.addEventListener('timeupdate', timeUpdateHandler);
+            audio.addEventListener('ended', endedHandler);
+
+            // Store handlers for cleanup
+            card._audioHandlers = {
+                loadedmetadata: loadedMetadataHandler,
+                timeupdate: timeUpdateHandler,
+                ended: endedHandler
+            };
+
+            // Play/pause functionality
+            playPauseBtn.addEventListener('click', () => {
+                if (isPlaying) {
+                    audio.pause();
+                    playPauseBtn.textContent = '▶';
+                } else {
+                    // Set source only when playing to avoid preloading
+                    if (!audio.src) {
+                        audio.src = fileUrl;
+                    }
+                    audio.play().catch(e => console.warn('Audio play failed:', e));
+                    playPauseBtn.textContent = '⏸';
+                }
+                isPlaying = !isPlaying;
+            });
+
+            return card;
+        }
+        // Global media cleanup function
+        function cleanupAllMedia() {
+            console.log('🧹 Cleaning up all media elements...');
+            
+            // Clean up expanded videos
+            document.querySelectorAll('.video-card.expanded').forEach(card => {
+                collapseVideo(card);
+            });
+            
+            // Clean up audio players
+            document.querySelectorAll('.audio-card').forEach(card => {
+                const audio = card._audioElement;
+                if (audio) {
+                    try {
+                        audio.pause();
+                        audio.currentTime = 0;
+                        audio.src = '';
+                        audio.load();
+                        
+                        // Remove event listeners
+                        if (card._audioHandlers) {
+                            Object.entries(card._audioHandlers).forEach(([event, handler]) => {
+                                audio.removeEventListener(event, handler);
+                            });
+                            delete card._audioHandlers;
+                        }
+                        
+                        delete card._audioElement;
+                    } catch (e) {
+                        console.warn('Error cleaning up audio:', e);
+                    }
+                }
+            });
+            
+            // Clean up PDF reader if open
+            const bookReader = document.getElementById('bookReader');
+            if (bookReader && bookReader.classList.contains('active')) {
+                bookReader.classList.remove('active');
+                document.getElementById('readerContent').innerHTML = '';
+            }
+        }
+
+        // Call cleanup when switching tabs
+        function switchToTab(tabName) {
+            // Clean up media before switching
+            cleanupAllMedia();
+            
+            // Remove active class from all tabs and contents
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+            // Add active class to clicked tab
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+            
+            // Scroll to top of the container when switching tabs
+            const container = document.querySelector('.container');
+            if (container) {
+                container.scrollTop = 0;
+            }
+        }
+        // Clean up when page becomes hidden
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                cleanupAllMedia();
+            }
+        });
+
+        // Clean up before page unload
+        window.addEventListener('beforeunload', () => {
+            cleanupAllMedia();
+        });
+
+        // Clean up on page hide (for mobile)
+        window.addEventListener('pagehide', () => {
+            cleanupAllMedia();
+        });
+
+        // Helper function to create a book card
+        function createBookCard({ topic, description, author, image, file, resourceType, featured, resourceId }) {
+            const imageUrl = Array.isArray(image) && image.length > 0 ? image[0].url : 'https://via.placeholder.com/300x200?text=No+Image';
+            const fileUrl = Array.isArray(file) && file.length > 0 ? file[0].url : '';
+            const type = resourceType || 'Book';
+            const title = topic || 'Untitled';
+            const desc = description || 'No description available.';
+            const writer = author || 'Unknown Author';
+
+            const card = document.createElement('div');
+            card.classList.add('book-card');
+            card.setAttribute('data-resource-id', resourceId);
+
+            // Determine featured tag
+            let tagLabel = '';
+            if (featured && featured.toLowerCase().includes('featured')) {
+                tagLabel = 'FEATURED BOOK';
+            }
+
+            card.innerHTML = `
+                <div class="card-image">
+                    <img src="${imageUrl}" alt="${title}" style="width:100%; height:100%; object-fit:cover;">
+                </div>
+                <div class="card-content">
+                    ${tagLabel ? `<span class="card-tag">${tagLabel}</span>` : ''}
+                    <h3 class="card-title">${title}</h3>
+                    <p class="card-description">${desc}</p>
+                    <small>By ${writer}</small>
+                </div>
+            `;
+
+            card.addEventListener('click', () => {
+                if (fileUrl) {
+                    openBookReaderWithFallback(title, fileUrl, resourceId);
+                } else {
+                    alert('No book file available.');
+                }
+            });
+
+            return card;
+        }
+
+        // Tab switching function
+        function switchToTab(tabName) {
+            // Remove active class from all tabs and contents
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        
+            // Add active class to clicked tab
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+            
+            // Scroll to top of the container when switching tabs
+            const container = document.querySelector('.container');
+            if (container) {
+                container.scrollTop = 0;
+            }
+        }
+
+        // Book Reader functionality with PDF.js fallback
+        const bookReader = document.getElementById('bookReader');
+        const readerTitle = document.getElementById('readerTitle');
+        const readerContent = document.getElementById('readerContent');
+        const closeReader = document.getElementById('closeReader');
+        const prevPage = document.getElementById('prevPage');
+        const nextPage = document.getElementById('nextPage');
+        const pageInfo = document.getElementById('pageInfo');
+        const completionStatus = document.getElementById('completionStatus');
+
+        let currentBookId = null;
+        let progressTracked = false;
+
+        async function setupPdfReader(pdf, fileUrl, bookId) {
+            let currentPageNum = 1;
+            const totalPages = pdf.numPages;
+            
+                async function renderPage(pageNum) {
+                    readerContent.innerHTML = '<div class="loading">Loading page...</div>';
+                    
+                    const page = await pdf.getPage(pageNum);
+                    
+                    // Mobile: scale up for readability, desktop: keep original
+                    const isMobile = window.innerWidth < 768;
+                    const scale = isMobile ? 5.0 : 1.5;
+                    const viewport = page.getViewport({ scale: scale });
+                
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                
+                const renderContext = {
+                    canvasContext: context,
+                    viewport: viewport
+                };
+                
+                await page.render(renderContext).promise;
+                
+                readerContent.innerHTML = '';
+                const container = document.createElement('div');
+                container.className = 'pdf-container';
+                container.appendChild(canvas);
+                canvas.className = 'pdf-page';
+                readerContent.appendChild(container);
+                
+                checkBookProgress(currentPageNum, totalPages);
+            }
+
+            function updatePageInfo() {
+                pageInfo.textContent = `Page ${currentPageNum} of ${totalPages}`;
+                prevPage.disabled = currentPageNum === 1;
+                nextPage.disabled = currentPageNum === totalPages;
+            }
+
+            // Event listeners for PDF navigation
+            prevPage.onclick = async () => {
+                if (currentPageNum > 1) {
+                    currentPageNum--;
+                    await renderPage(currentPageNum);
+                    updatePageInfo();
+                }
+            };
+            
+            nextPage.onclick = async () => {
+                if (currentPageNum < totalPages) {
+                    currentPageNum++;
+                    await renderPage(currentPageNum);
+                    updatePageInfo();
+                }
+            };
+
+            // Show page navigation for PDF
+            document.querySelector('.page-nav').style.display = 'flex';
+            
+            await renderPage(currentPageNum);
+            updatePageInfo();
+        }
+
+        function useGoogleDocsViewer(title, fileUrl, bookId) {
+            readerContent.innerHTML = `
+                <div style="width:100%; height:100%;">
+                    <iframe src="https://docs.google.com/gview?url=${encodeURIComponent(fileUrl)}&embedded=true" 
+                            style="width:100%; height:100%; border:none;"></iframe>
+                </div>
+            `;
+            bookReader.classList.add('active');
+            
+            // Hide page navigation for Google Docs viewer
+            document.querySelector('.page-nav').style.display = 'none';
+            
+            // For Google Docs viewer, we'll track completion after a time delay
+            setTimeout(() => {
+                if (!progressTracked && !completedResources.has(bookId)) {
+                    progressTracked = true;
+                    completedResources.add(bookId);
+                    updateBookProgress(bookId);
+                    completionStatus.textContent = '✓ Completed!';
+                    completionStatus.style.color = 'green';
+                }
+            }, 30000);
+        }
+
+        function checkBookProgress(currentPage, totalPages) {
+            const progress = (currentPage / totalPages) * 100;
+            
+            if (progress >= 80 && !progressTracked && !completedResources.has(currentBookId)) {
+                progressTracked = true;
+                completedResources.add(currentBookId);
+                updateBookProgress(currentBookId);
+                completionStatus.textContent = '✓ Completed!';
+                completionStatus.style.color = 'green';
+            } else if (progress >= 50) {
+                completionStatus.textContent = `${Math.round(progress)}% read`;
+                completionStatus.style.color = 'var(--primary)';
+            }
+        }
+
+        closeReader.addEventListener('click', () => {
+            bookReader.classList.remove('active');
+            readerContent.innerHTML = '';
+        });
+        let currentPdf = null;
+
+        async function openBookReaderWithFallback(title, fileUrl, bookId) {
+            // Clean up previous PDF first
+            if (currentPdf) {
+                try {
+                    currentPdf.destroy();
+                } catch (e) {
+                    console.warn('Error cleaning up previous PDF:', e);
+                }
+                currentPdf = null;
+            }
+            
+            currentBookId = bookId;
+            progressTracked = false;
+            
+            readerTitle.textContent = title;
+            completionStatus.textContent = '';
+            
+            // Use the proxy URL instead of direct S3 URL
+            const proxyUrl = `https://mgi-login-worker.stevechikeabia.workers.dev/proxy-pdf/${encodeURIComponent(fileUrl)}`;
+            
+            try {
+                readerContent.innerHTML = '<div class="loading">Loading PDF...</div>';
+                bookReader.classList.add('active');
+                
+                const loadingTask = pdfjsLib.getDocument(proxyUrl);
+                const pdf = await loadingTask.promise;
+                currentPdf = pdf; // Store for cleanup
+                
+                // If we get here, PDF.js worked - set up the PDF reader
+                await setupPdfReader(pdf, fileUrl, bookId);
+                
+            } catch (error) {
+                console.log('PDF.js failed, falling back to Google Docs viewer:', error);
+                // Use Google Docs viewer as fallback
+                useGoogleDocsViewer(title, fileUrl, bookId);
+            }
+        }
+
+        // Update closeReader to cleanup PDF
+        closeReader.addEventListener('click', () => {
+            if (currentPdf) {
+                try {
+                    currentPdf.destroy();
+                } catch (e) {
+                    console.warn('Error cleaning up PDF:', e);
+                }
+                currentPdf = null;
+            }
+            bookReader.classList.remove('active');
+            readerContent.innerHTML = '';
+        });
+
+        // Function to update book progress
+        async function updateBookProgress(bookId) {
+            const userRowId = localStorage.getItem('userRowId');
+            if (!userRowId) return;
+
+            try {
+                const res = await fetch(`https://mgi-login-worker.stevechikeabia.workers.dev/update_progress`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        rowId: userRowId,  
+                        resourceId: bookId,
+                        type: 'Book'
+                    })
+                });
+                    
+                const data = await res.json();
+                console.log('✅ Book progress updated:', data);
+
+                // Update frontend stats immediately
+                if (data.updatedProgress) {
+                    document.querySelectorAll('.progress-card .stat-label').forEach(stat => {
+                        if (stat.textContent.includes('Books Read')) {
+                            stat.previousElementSibling.textContent = data.updatedProgress;
+                        }
+                    });
+                }
+            } catch (err) {
+                console.error('❌ Failed to update book progress:', err);
+            }
+        }
+
+        // Function to update video progress
+        async function updateVideoProgress(videoId) {
+            const userRowId = localStorage.getItem('userRowId');
+            if (!userRowId) return;
+
+            try {
+                const res = await fetch(`https://mgi-login-worker.stevechikeabia.workers.dev/update_progress`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        rowId: userRowId,  
+                        resourceId: videoId,
+                        type: 'Video'
+                    })
+                });
+                    
+                const data = await res.json();
+                console.log('✅ Video progress updated:', data);
+
+                // Update frontend stats immediately
+                if (data.updatedProgress) {
+                    document.querySelectorAll('.progress-card .stat-label').forEach(stat => {
+                        if (stat.textContent.includes('Lessons Finished')) {
+                            stat.previousElementSibling.textContent = data.updatedProgress;
+                        }
+                    });
+                }
+            } catch (err) {
+                console.error('❌ Failed to update video progress:', err);
+            }
+        }
+
+        // Function to update audio progress
+        async function updateAudioProgress(audioId) {
+            const userRowId = localStorage.getItem('userRowId');
+            if (!userRowId) return;
+
+            try {
+                const res = await fetch(`https://mgi-login-worker.stevechikeabia.workers.dev/update_progress`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        rowId: userRowId,  
+                        resourceId: audioId,
+                        type: 'Audio'
+                    })
+                });
+                    
+                const data = await res.json();
+                console.log('✅ Audio progress updated:', data);
+            } catch (err) {
+                console.error('❌ Failed to update audio progress:', err);
+            }
+        }
+
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            localStorage.removeItem('userEmail');
+            localStorage.removeItem('userRowId');
+            window.location.href = 'index.html';
+        });
+        async function loadCourses() {
+            const coursesContainer = document.querySelector('#courses .content-grid');
+            coursesContainer.innerHTML = '<p>Loading courses...</p>';
+        
+            try {
+                const response = await fetch('https://mgi-login-worker.stevechikeabia.workers.dev/get_courses');
+                if (!response.ok) throw new Error('Failed to fetch courses');
+        
+                const courses = await response.json();
+                
+                coursesContainer.innerHTML = '';
+        
+                if (!Array.isArray(courses) || courses.length === 0) {
+                    coursesContainer.innerHTML = '<p>No courses available.</p>';
+                    return;
+                }
+        
+                courses.forEach(course => {
+                    const courseCard = document.createElement('div');
+                    courseCard.classList.add('course-card');
+        
+                    const courseName = course['Course Name'] || 'Untitled Course';
+                    const courseId = course['Course ID'] || '';
+                    const lessons = [];
+        
+                    for (let i = 1; i <= 20; i++) {
+                        const lessonField = `Lesson ${i}`;
+                        if (course[lessonField] && course[lessonField].fileName && course[lessonField].fileUrl) {
+                            lessons.push(course[lessonField]);
+                        }
+                    }
+        
+                    // Build card without progress bar
+                    courseCard.innerHTML = `
+                        <h3 class="card-title">${courseName}</h3>
+                        <p class="card-description">${lessons.length} lessons</p>
+                        <ul class="lessons-list"></ul>
+                    `;
+        
+                    const lessonsList = courseCard.querySelector('.lessons-list');
+        
+                    lessons.forEach((lesson, index) => {
+                        const li = document.createElement('li');
+                        li.classList.add('lesson-item');
+                        li.innerHTML = `
+                            <span>📘 ${lesson.fileName}</span>
+                            <div class="lesson-status"></div>
+                        `;
+                        li.addEventListener('click', () => {
+                            openLessonModal(courseName, courseId, lesson.fileName, lesson.fileUrl, index, lessons.length);
+                        });
+                        lessonsList.appendChild(li);
+                    });
+        
+                    coursesContainer.appendChild(courseCard);
+                });
+            } catch (error) {
+                console.error('❌ Error loading courses:', error);
+                coursesContainer.innerHTML = '<p style="color:red;">Failed to load courses.</p>';
+            }
+        }
+
+        function openLessonModal(courseName, courseId, lessonTitle, fileUrl, lessonIndex, totalLessons) {
+            // Create modal if not present
+            let modal = document.getElementById('lessonModal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'lessonModal';
+                modal.innerHTML = `
+                    <div class="lesson-modal-overlay"></div>
+                    <div class="lesson-modal-content">
+                        <div class="lesson-modal-header">
+                            <h2 id="lessonModalTitle"></h2>
+                            <button id="closeLessonModal">&times;</button>
+                        </div>
+                        <div id="lessonModalBody" class="lesson-modal-body"></div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+        
+                modal.querySelector('#closeLessonModal').addEventListener('click', closeLessonModal);
+                modal.querySelector('.lesson-modal-overlay').addEventListener('click', closeLessonModal);
+            }
+        
+            const body = document.getElementById('lessonModalBody');
+            body.innerHTML = '';
+            document.getElementById('lessonModalTitle').textContent = lessonTitle;
+            modal.style.display = 'flex';
+        
+            if (fileUrl.endsWith('.mp4')) {
+                const videoContainer = document.createElement('div');
+                videoContainer.style.position = 'relative';
+        
+                const video = document.createElement('video');
+                video.src = fileUrl;
+                video.controls = true;
+                video.autoplay = true;
+                video.style.width = '100%';
+                video.style.borderRadius = '12px';
+                videoContainer.appendChild(video);
+                body.appendChild(videoContainer);
+        
+                // When last lesson finishes, call backend
+                video.addEventListener('ended', async () => {
+                    console.log(`🎬 Video ended: "${lessonTitle}" (Lesson ${lessonIndex + 1} of ${totalLessons})`);
+                
+                    // Check if this is the last lesson
+                    if (lessonIndex + 1 === totalLessons) {
+                        console.log(`🏁 This is the LAST lesson for course "${courseName}". Preparing to update progress...`);
+                        const userId = localStorage.getItem('userRowId');
+                        if (!userId) {
+                            console.warn('⚠️ User ID not found in localStorage — cannot update course progress.');
+                            return;
+                        }
+                
+                        // Send PATCH request to backend
+                        try {
+                            console.log('📡 Sending PATCH request to /course_progress...');
+                            const res = await fetch('https://mgi-login-worker.stevechikeabia.workers.dev/course_progress', {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    courseId,
+                                    userId
+                                })
+                            });
+                
+                            const data = await res.json();
+                            if (res.ok) {
+                                console.log('✅ Course progress successfully recorded:', data);
+                            } else {
+                                console.error('❌ Server responded with error:', data);
+                            }
+                        } catch (err) {
+                            console.error('🚨 Failed to send course progress request:', err);
+                        }
+                    }
+                
+                    // Add replay button for any lesson
+                    const replayBtn = document.createElement('button');
+                    replayBtn.textContent = 'Replay Lesson';
+                    Object.assign(replayBtn.style, {
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        background: 'rgba(0,0,0,0.6)',
+                        color: '#fff',
+                        border: 'none',
+                        padding: '10px 20px',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontWeight: 'bold',
+                        zIndex: '5'
+                    });
+                
+                    replayBtn.addEventListener('click', () => {
+                        console.log(`🔁 Replaying: "${lessonTitle}"`);
+                        video.currentTime = 0;
+                        video.play();
+                        replayBtn.remove();
+                    });
+                
+                    videoContainer.appendChild(replayBtn);
+                });
+
+            } else if (fileUrl.endsWith('.pdf')) {
+                const iframe = document.createElement('iframe');
+                iframe.src = fileUrl;
+                iframe.style.width = '100%';
+                iframe.style.height = '80vh';
+                iframe.style.border = 'none';
+                body.appendChild(iframe);
+            } else {
+                body.innerHTML = `<p>Unsupported file type: ${fileUrl}</p>`;
+            }
+        }
+        
+        function closeLessonModal() {
+            const modal = document.getElementById('lessonModal');
+            if (modal) {
+                modal.style.display = 'none';
+                const body = document.getElementById('lessonModalBody');
+                if (body) body.innerHTML = '';
+            }
+        }
         // Tab Navigation
         const tabs = document.querySelectorAll('.nav-tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+
         tabs.forEach(tab => {
             tab.addEventListener('click', () => {
                 const tabId = tab.getAttribute('data-tab');
@@ -1257,1197 +2585,17 @@
             });
         });
 
-        // Logout button
-        document.getElementById('logoutBtn').addEventListener('click', () => {
-            localStorage.removeItem('userEmail');
-            localStorage.removeItem('userRowId');
-            window.location.href = 'index.html';
-        });
-
-        // Book Reader controls
-        document.getElementById('closeReader').addEventListener('click', closeBookReader);
-
-        // Window event listeners for cleanup
-        window.addEventListener('resize', handleWindowResize);
-        document.addEventListener('visibilitychange', handleVisibilityChange);
-        window.addEventListener('beforeunload', cleanupAllMedia);
-        window.addEventListener('pagehide', cleanupAllMedia);
-    }
-
-    // Resource loading functions
-    async function loadResources() {
-        const booksContainer = document.querySelector('#books .content-grid');
-        const audioContainer = document.querySelector('#audio .content-grid');
-        const featuredContainer = document.querySelector('.featured-grid');
-
-        // Clear existing placeholder cards
-        booksContainer.innerHTML = '';
-        audioContainer.innerHTML = '';
-        featuredContainer.innerHTML = '';
-
-        try {
-            // Reset pagination states
-            currentBookPage = 1;
-            currentAudioPage = 1;
-            hasMoreBooks = true;
-            hasMoreAudio = true;
-
-            // Load featured resources (limited to 3)
-            const featuredResponse = await fetch('https://mgi-login-worker.stevechikeabia.workers.dev/get_resources?featured=true&limit=3');
-            if (!featuredResponse.ok) throw new Error('Failed to fetch featured resources');
-            const featuredData = await featuredResponse.json();
-            
-            // Add featured cards
-            if (featuredData.resources && featuredData.resources.length > 0) {
-                featuredData.resources.forEach(resource => {
-                    const card = createFeaturedCard(resource);
-                    featuredContainer.appendChild(card);
-                });
-            } else {
-                featuredContainer.innerHTML = '<p>No featured resources available this week.</p>';
-            }
-
-            // Load first page of books
-            await loadBookPage(1);
-            
-            // Load first page of audio
-            await loadAudioPage(1);
-
-            // Load first page of videos
-            loadVideoPage(1);
-
-        } catch (error) {
-            console.error('❌ Error loading resources:', error);
-            booksContainer.innerHTML = '<p style="color:red;">Failed to load books.</p>';
-            audioContainer.innerHTML = '<p style="color:red;">Failed to load audio resources.</p>';
-            featuredContainer.innerHTML = '<p style="color:red;">Failed to load featured resources.</p>';
-        }
-    }
-
-    // Pagination functions
-    async function loadBookPage(page) {
-        const booksContainer = document.querySelector('#books .content-grid');
-        
-        // Show loading indicator for subsequent pages
-        if (page > 1) {
-            const loadingIndicator = document.createElement('div');
-            loadingIndicator.className = 'loading';
-            loadingIndicator.textContent = 'Loading more books...';
-            booksContainer.appendChild(loadingIndicator);
-        }
-
-        try {
-            const response = await fetch(`https://mgi-login-worker.stevechikeabia.workers.dev/get_resources?type=Book&page=${page}&limit=${resourcesPerPage}`);
-            if (!response.ok) throw new Error('Failed to fetch books');
-            
-            const data = await response.json();
-            
-            // Remove loading indicator
-            const loadingIndicator = booksContainer.querySelector('.loading');
-            if (loadingIndicator) loadingIndicator.remove();
-
-            // Clear container only for first page
-            if (page === 1) {
-                booksContainer.innerHTML = '';
-            }
-            
-            // Add book cards
-            if (data.resources && data.resources.length > 0) {
-                data.resources.forEach(resource => {
-                    const card = createBookCard(resource);
-                    booksContainer.appendChild(card);
-                });
-            } else if (page === 1) {
-                booksContainer.innerHTML = '<p>No books available.</p>';
-            }
-
-            // Update pagination state
-            hasMoreBooks = data.pagination.hasNext;
-            currentBookPage = page;
-            
-            // Add "Load More" button if there are more books
-            if (hasMoreBooks) {
-                addLoadMoreBooksButton();
-            }
-
-        } catch (error) {
-            console.error('❌ Error loading books page:', error);
-            const loadingIndicator = booksContainer.querySelector('.loading');
-            if (loadingIndicator) loadingIndicator.remove();
-            
-            if (page === 1) {
-                booksContainer.innerHTML = '<p style="color:red;">Failed to load books.</p>';
-            }
-        }
-    }
-
-    async function loadAudioPage(page) {
-        const audioContainer = document.querySelector('#audio .content-grid');
-        
-        // Show loading indicator for subsequent pages
-        if (page > 1) {
-            const loadingIndicator = document.createElement('div');
-            loadingIndicator.className = 'loading';
-            loadingIndicator.textContent = 'Loading more audio...';
-            audioContainer.appendChild(loadingIndicator);
-        }
-
-        try {
-            const response = await fetch(`https://mgi-login-worker.stevechikeabia.workers.dev/get_resources?type=Audio&page=${page}&limit=${resourcesPerPage}`);
-            if (!response.ok) throw new Error('Failed to fetch audio');
-            
-            const data = await response.json();
-            
-            // Remove loading indicator
-            const loadingIndicator = audioContainer.querySelector('.loading');
-            if (loadingIndicator) loadingIndicator.remove();
-
-            // Clear container only for first page
-            if (page === 1) {
-                audioContainer.innerHTML = '';
-            }
-            
-            // Add audio cards
-            if (data.resources && data.resources.length > 0) {
-                data.resources.forEach(resource => {
-                    const card = createAudioCard(resource);
-                    audioContainer.appendChild(card);
-                });
-            } else if (page === 1) {
-                audioContainer.innerHTML = '<p>No audio resources available.</p>';
-            }
-
-            // Update pagination state
-            hasMoreAudio = data.pagination.hasNext;
-            currentAudioPage = page;
-            
-            // Add "Load More" button if there are more audio resources
-            if (hasMoreAudio) {
-                addLoadMoreAudioButton();
-            }
-
-        } catch (error) {
-            console.error('❌ Error loading audio page:', error);
-            const loadingIndicator = audioContainer.querySelector('.loading');
-            if (loadingIndicator) loadingIndicator.remove();
-            
-            if (page === 1) {
-                audioContainer.innerHTML = '<p style="color:red;">Failed to load audio resources.</p>';
-            }
-        }
-    }
-
-    async function loadVideoPage(page) {
-        const videosContainer = document.querySelector('#videos .content-grid');
-        
-        // Show loading indicator for subsequent pages
-        if (page > 1) {
-            const loadingIndicator = document.createElement('div');
-            loadingIndicator.className = 'loading';
-            loadingIndicator.textContent = 'Loading more videos...';
-            videosContainer.appendChild(loadingIndicator);
-        }
-
-        try {
-            const response = await fetch(`https://mgi-login-worker.stevechikeabia.workers.dev/get_resources?type=Video&page=${page}&limit=${videosPerPage}`);
-            if (!response.ok) throw new Error('Failed to fetch videos');
-            
-            const data = await response.json();
-            
-            // Remove loading indicator
-            const loadingIndicator = videosContainer.querySelector('.loading');
-            if (loadingIndicator) loadingIndicator.remove();
-
-            // Clear container only for first page
-            if (page === 1) {
-                videosContainer.innerHTML = '';
-                allVideoResources = []; // Reset global array
-            }
-            
-            // Add video cards
-            if (data.resources && data.resources.length > 0) {
-                data.resources.forEach(resource => {
-                    const card = createVideoCard(resource);
-                    videosContainer.appendChild(card);
-                    allVideoResources.push(resource); // Keep track for search/filtering
-                });
-            } else if (page === 1) {
-                videosContainer.innerHTML = '<p>No videos available.</p>';
-            }
-
-            // Update pagination state
-            currentVideoPage = page;
-            
-            // Add "Load More" button if there are more videos
-            if (data.pagination.hasNext) {
-                addLoadMoreVideosButton();
-            }
-
-        } catch (error) {
-            console.error('❌ Error loading videos page:', error);
-            const loadingIndicator = videosContainer.querySelector('.loading');
-            if (loadingIndicator) loadingIndicator.remove();
-            
-            if (page === 1) {
-                videosContainer.innerHTML = '<p style="color:red;">Failed to load videos.</p>';
-            }
-        }
-    }
-
-    // Load More button functions
-    function addLoadMoreBooksButton() {
-        const booksContainer = document.querySelector('#books .content-grid');
-        
-        // Remove existing load more button
-        const existingButton = booksContainer.querySelector('.load-more-btn');
-        if (existingButton) existingButton.remove();
-        
-        const loadMoreBtn = document.createElement('button');
-        loadMoreBtn.className = 'load-more-btn';
-        loadMoreBtn.innerHTML = 'Load More Books';
-        loadMoreBtn.addEventListener('click', () => {
-            loadBookPage(currentBookPage + 1);
-        });
-        
-        booksContainer.appendChild(loadMoreBtn);
-    }
-
-    function addLoadMoreAudioButton() {
-        const audioContainer = document.querySelector('#audio .content-grid');
-        
-        // Remove existing load more button
-        const existingButton = audioContainer.querySelector('.load-more-btn');
-        if (existingButton) existingButton.remove();
-        
-        const loadMoreBtn = document.createElement('button');
-        loadMoreBtn.className = 'load-more-btn';
-        loadMoreBtn.innerHTML = 'Load More Audio';
-        loadMoreBtn.addEventListener('click', () => {
-            loadAudioPage(currentAudioPage + 1);
-        });
-        
-        audioContainer.appendChild(loadMoreBtn);
-    }
-
-    function addLoadMoreVideosButton() {
-        const videosContainer = document.querySelector('#videos .content-grid');
-        
-        // Remove existing load more button
-        const existingButton = videosContainer.querySelector('.load-more-btn');
-        if (existingButton) existingButton.remove();
-        
-        const loadMoreBtn = document.createElement('button');
-        loadMoreBtn.className = 'load-more-btn';
-        loadMoreBtn.innerHTML = 'Load More Videos';
-        loadMoreBtn.addEventListener('click', () => {
-            loadVideoPage(currentVideoPage + 1);
-        });
-        
-        videosContainer.appendChild(loadMoreBtn);
-    }
-
-    // Card creation functions
-    function createFeaturedCard({ topic, description, author, image, file, resourceType, featured, resourceId }) {
-        const imageUrl = Array.isArray(image) && image.length > 0
-            ? image[0].url
-            : 'https://via.placeholder.com/300x200?text=No+Image';
-        const fileUrl = Array.isArray(file) && file.length > 0 ? file[0].url : '';
-        const type = resourceType || 'Book';
-        const title = topic || 'Untitled';
-        const desc = description || 'No description available.';
-        const writer = author || 'Unknown Author';
-
-        const card = document.createElement('div');
-        card.classList.add('card');
-        card.setAttribute('data-resource-type', type);
-        card.setAttribute('data-resource-id', resourceId);
-        card.setAttribute('data-file-url', fileUrl);
-        card.setAttribute('data-title', title);
-
-        // Determine featured tag
-        let tagLabel = '';
-        if (featured && featured.toLowerCase().includes('featured')) {
-            if (type === 'Video') tagLabel = 'POPULAR VIDEO';
-            else if (type === 'Book') tagLabel = 'FEATURED BOOK';
-            else if (type === 'Audio') tagLabel = 'FEATURED AUDIO';
-            else tagLabel = 'FEATURED RESOURCE';
-        }
-
-        card.innerHTML = `
-            <div class="card-image">
-                <img src="${imageUrl}" alt="${title}" style="width:100%; height:100%; object-fit:cover;">
-            </div>
-            <div class="card-content">
-                ${tagLabel ? `<span class="card-tag">${tagLabel}</span>` : ''}
-                <h3 class="card-title">${title}</h3>
-                <p class="card-description">${desc}</p>
-                <small>By ${writer}</small>
-            </div>
-        `;
-
-        card.addEventListener('click', () => {
-            handleFeaturedCardClick(card);
-        });
-
-        return card;
-    }
-
-    function createBookCard({ topic, description, author, image, file, resourceType, featured, resourceId }) {
-        const imageUrl = Array.isArray(image) && image.length > 0 ? image[0].url : 'https://via.placeholder.com/300x200?text=No+Image';
-        const fileUrl = Array.isArray(file) && file.length > 0 ? file[0].url : '';
-        const type = resourceType || 'Book';
-        const title = topic || 'Untitled';
-        const desc = description || 'No description available.';
-        const writer = author || 'Unknown Author';
-
-        const card = document.createElement('div');
-        card.classList.add('book-card');
-        card.setAttribute('data-resource-id', resourceId);
-
-        // Determine featured tag
-        let tagLabel = '';
-        if (featured && featured.toLowerCase().includes('featured')) {
-            tagLabel = 'FEATURED BOOK';
-        }
-
-        card.innerHTML = `
-            <div class="card-image">
-                <img src="${imageUrl}" alt="${title}" style="width:100%; height:100%; object-fit:cover;">
-            </div>
-            <div class="card-content">
-                ${tagLabel ? `<span class="card-tag">${tagLabel}</span>` : ''}
-                <h3 class="card-title">${title}</h3>
-                <p class="card-description">${desc}</p>
-                <small>By ${writer}</small>
-            </div>
-        `;
-
-        card.addEventListener('click', () => {
-            if (fileUrl) {
-                openBookReaderWithFallback(title, fileUrl, resourceId);
-            } else {
-                alert('No book file available.');
-            }
-        });
-
-        return card;
-    }
-
-    function createVideoCard({ topic, description, author, image, file, resourceType, featured, resourceId }) {
-        const imageUrl = Array.isArray(image) && image.length > 0
-            ? image[0].url
-            : 'https://via.placeholder.com/300x200?text=No+Image';
-        const fileUrl = Array.isArray(file) && file.length > 0 ? file[0].url : '';
-        const type = resourceType || 'Video';
-        const title = topic || 'Untitled';
-        const desc = description || 'No description available.';
-        const writer = author || 'Unknown Author';
-
-        const card = document.createElement('div');
-        card.classList.add('video-card');
-        card.setAttribute('data-resource-id', resourceId);
-
-        // Determine featured tag
-        let tagLabel = '';
-        if (featured && featured.toLowerCase().includes('featured')) {
-            tagLabel = 'FEATURED VIDEO';
-        }
-
-        card.innerHTML = `
-            <div class="card-content">
-                ${tagLabel ? `<span class="card-tag">${tagLabel}</span>` : ''}
-                <h3 class="card-title">${title}</h3>
-                <p class="card-description">${desc}</p>
-                <small>By ${writer}</small>
-            </div>
-            <div class="video-player">
-                <div class="video-thumbnail"></div>
-            </div>
-        `;
-
-        // Add click handler to load video only when clicked
-        const thumbnail = card.querySelector('.video-thumbnail');
-        thumbnail.addEventListener('click', function() {
-            loadVideoOnClick(card, fileUrl, resourceId);
-        });
-
-        return card;
-    }
-
-    function createAudioCard({ topic, description, author, image, file, resourceType, featured, resourceId }) {
-        const imageUrl = Array.isArray(image) && image.length > 0
-            ? image[0].url
-            : 'https://via.placeholder.com/300x200?text=No+Image';
-        const fileUrl = Array.isArray(file) && file.length > 0 ? file[0].url : '';
-        const type = resourceType || 'Audio';
-        const title = topic || 'Untitled';
-        const desc = description || 'No description available.';
-        const writer = author || 'Unknown Author';
-
-        const card = document.createElement('div');
-        card.classList.add('audio-card');
-        card.setAttribute('data-resource-id', resourceId);
-
-        // Determine featured tag
-        let tagLabel = '';
-        if (featured && featured.toLowerCase().includes('featured')) {
-            tagLabel = 'FEATURED AUDIO';
-        }
-
-        card.innerHTML = `
-            <div class="audio-thumbnail">
-                <div class="audio-icon">🎵</div>
-            </div>
-            <div class="card-content">
-                ${tagLabel ? `<span class="card-tag">${tagLabel}</span>` : ''}
-                <h3 class="card-title">${title}</h3>
-                <p class="card-description">${desc}</p>
-                <small>By ${writer}</small>
-            </div>
-            <div class="audio-controls">
-                <button class="play-pause-btn">▶</button>
-                <div class="audio-progress">
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: 0%"></div>
-                    </div>
-                    <div class="audio-time">
-                        <span class="current-time">0:00</span>
-                        <span class="duration">0:00</span>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        setupAudioPlayer(card, fileUrl, resourceId);
-        return card;
-    }
-
-    // Media handling functions
-    function loadVideoOnClick(card, fileUrl, resourceId) {
-        // Prevent multiple expansions
-        if (card.classList.contains('expanded')) return;
-        
-        // Clean up any existing video first
-        if (card._currentVideo) {
-            collapseVideo(card);
-            // Small delay to ensure cleanup completes
-            setTimeout(() => setupNewVideo(), 100);
-            return;
-        }
-        
-        setupNewVideo();
-
-        function setupNewVideo() {
-            const videoContainer = card.querySelector('.video-player');
-            const thumbnail = card.querySelector('.video-thumbnail');
-
-            // Save the resource info
-            card.dataset.fileUrl = fileUrl;
-            card.dataset.resourceId = resourceId;
-
-            // --- Freeze the height ---
-            const prevHeight = card.getBoundingClientRect().height;
-            card.style.height = prevHeight + 'px';
-            card.style.transition = 'height 0.25s ease, box-shadow 0.25s ease';
-
-            // --- Hide content & thumbnail ---
-            if (thumbnail) thumbnail.style.display = 'none';
-            const content = card.querySelector('.card-content');
-            if (content) {
-                content.style.opacity = '0';
-                content.style.transform = 'translateY(-8px)';
-                setTimeout(() => (content.style.display = 'none'), 260);
-            }
-
-            card.classList.add('expanded');
-            videoContainer.innerHTML = '';
-
-            // --- Close button ---
-            const closeBtn = document.createElement('button');
-            closeBtn.className = 'video-close-btn';
-            closeBtn.title = 'Close';
-            closeBtn.innerHTML = '&times;';
-            closeBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                collapseVideo(card);
-            });
-            videoContainer.appendChild(closeBtn);
-
-            // --- Video setup ---
-            const video = document.createElement('video');
-            video.controls = true;
-            video.autoplay = true;
-            video.playsInline = true;
-            video.preload = 'metadata'; // Only load metadata initially
-            video.innerHTML = `<source src="${fileUrl}" type="video/mp4">Your browser does not support the video tag.`;
-            videoContainer.appendChild(video);
-            card._currentVideo = video;
-
-            // --- Progress tracking with proper cleanup ---
-            let progressTracked = false;
-            
-            const timeUpdateHandler = () => {
-                if (video.duration) {
-                    const progress = (video.currentTime / video.duration) * 100;
-                    if (progress >= 80 && !progressTracked && !completedResources.has(resourceId)) {
-                        progressTracked = true;
-                        completedResources.add(resourceId);
-                        updateVideoProgress(resourceId);
-                    }
-                }
-            };
-            
-            video.addEventListener('timeupdate', timeUpdateHandler);
-            card._timeUpdateHandler = timeUpdateHandler; // Store for cleanup
-        }
-    }
-
-    function collapseVideo(card) {
-        const videoContainer = card.querySelector('.video-player');
-        const content = card.querySelector('.card-content');
-
-        // --- Stop and cleanup video ---
-        const video = card._currentVideo;
-        if (video) {
-            try { 
-                video.pause(); 
-                video.currentTime = 0; // Reset position
-                video.src = ''; // Clear source to stop loading
-                video.load(); // Triggers cleanup
-            } catch (e) {
-                console.warn('Error cleaning up video:', e);
-            }
-            
-            // Remove event listeners
-            video.removeEventListener('timeupdate', card._timeUpdateHandler);
-            delete card._timeUpdateHandler;
-            
-            // Remove from DOM
-            if (video.parentNode === videoContainer) {
-                videoContainer.removeChild(video);
-            }
-            delete card._currentVideo;
-        }
-
-        // Remove close button
-        const closeBtn = videoContainer.querySelector('.video-close-btn');
-        if (closeBtn && closeBtn.parentNode === videoContainer) {
-            videoContainer.removeChild(closeBtn);
-        }
-
-        // --- Restore thumbnail and reattach click handler ---
-        const fileUrl = card.dataset.fileUrl;
-        const resourceId = card.dataset.resourceId;
-        videoContainer.innerHTML = `<div class="video-thumbnail"></div>`;
-        const thumbnail = videoContainer.querySelector('.video-thumbnail');
-        if (thumbnail) {
-            thumbnail.addEventListener('click', () => loadVideoOnClick(card, fileUrl, resourceId));
-        }
-
-        // --- Restore text content ---
-        if (content) {
-            content.style.display = '';
-            setTimeout(() => {
-                content.style.opacity = '1';
-                content.style.transform = 'translateY(0)';
-            }, 20);
-        }
-
-        // --- Reset card state ---
-        card.classList.remove('expanded');
-        card.style.height = '';
-    }
-
-    function setupAudioPlayer(card, fileUrl, resourceId) {
-        const playPauseBtn = card.querySelector('.play-pause-btn');
-        const progressFill = card.querySelector('.progress-fill');
-        const currentTimeEl = card.querySelector('.current-time');
-        const durationEl = card.querySelector('.duration');
-        
-        const audio = new Audio();
-        audio.preload = 'metadata'; // Only load metadata
-        let isPlaying = false;
-        let progressTracked = false;
-
-        // Store audio reference for cleanup
-        card._audioElement = audio;
-
-        // Format time function
-        function formatTime(seconds) {
-            const mins = Math.floor(seconds / 60);
-            const secs = Math.floor(seconds % 60);
-            return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
-        }
-
-        // Event handlers
-        const loadedMetadataHandler = () => {
-            durationEl.textContent = formatTime(audio.duration);
-        };
-
-        const timeUpdateHandler = () => {
-            if (audio.duration) {
-                const progress = (audio.currentTime / audio.duration) * 100;
-                progressFill.style.width = `${progress}%`;
-                currentTimeEl.textContent = formatTime(audio.currentTime);
-
-                // Track progress when 80% listened
-                if (progress >= 80 && !progressTracked && !completedResources.has(resourceId)) {
-                    progressTracked = true;
-                    completedResources.add(resourceId);
-                    updateAudioProgress(resourceId);
-                }
-            }
-        };
-
-        const endedHandler = () => {
-            isPlaying = false;
-            playPauseBtn.textContent = '▶';
-            progressFill.style.width = '100%';
-            currentTimeEl.textContent = durationEl.textContent;
-        };
-
-        // Add event listeners
-        audio.addEventListener('loadedmetadata', loadedMetadataHandler);
-        audio.addEventListener('timeupdate', timeUpdateHandler);
-        audio.addEventListener('ended', endedHandler);
-
-        // Store handlers for cleanup
-        card._audioHandlers = {
-            loadedmetadata: loadedMetadataHandler,
-            timeupdate: timeUpdateHandler,
-            ended: endedHandler
-        };
-
-        // Play/pause functionality
-        playPauseBtn.addEventListener('click', () => {
-            if (isPlaying) {
-                audio.pause();
-                playPauseBtn.textContent = '▶';
-            } else {
-                // Set source only when playing to avoid preloading
-                if (!audio.src) {
-                    audio.src = fileUrl;
-                }
-                audio.play().catch(e => console.warn('Audio play failed:', e));
-                playPauseBtn.textContent = '⏸';
-            }
-            isPlaying = !isPlaying;
-        });
-    }
-
-    // Navigation and interaction functions
-    function handleFeaturedCardClick(card) {
-        const resourceType = card.getAttribute('data-resource-type');
-        const resourceId = card.getAttribute('data-resource-id');
-        const fileUrl = card.getAttribute('data-file-url');
-        const title = card.getAttribute('data-title');
-
-        // Navigate to appropriate tab
-        switch(resourceType) {
-            case 'Book':
-                switchToTab('books');
-                // Find and click the corresponding book card
+        // Card click interactions
+        document.querySelectorAll('.card, .video-card, .lesson-item, .book-card').forEach(card => {
+            card.addEventListener('click', function() {
+                // Add ripple effect
+                this.style.transform = 'scale(0.98)';
                 setTimeout(() => {
-                    const bookCard = document.querySelector(`.book-card[data-resource-id="${resourceId}"]`);
-                    if (bookCard) {
-                        bookCard.click();
-                    } else {
-                        openBookReaderWithFallback(title, fileUrl, resourceId);
-                    }
-                }, 300);
-                break;
-                
-            case 'Video':
-                switchToTab('videos');
-                
-                // Check if video is on current page, if not, load the appropriate page
-                setTimeout(() => {
-                    let videoCard = document.querySelector(`.video-card[data-resource-id="${resourceId}"]`);
-                    
-                    // If video not found on current page, it might be on another page
-                    if (!videoCard) {
-                        // Find which page contains this video
-                        const videoIndex = allVideoResources.findIndex(video => video.resourceId === resourceId);
-                        if (videoIndex !== -1) {
-                            const targetPage = Math.floor(videoIndex / videosPerPage) + 1;
-                            loadVideoPage(targetPage);
-                            
-                            // Wait for page to load then find the card
-                            setTimeout(() => {
-                                videoCard = document.querySelector(`.video-card[data-resource-id="${resourceId}"]`);
-                                if (videoCard) {
-                                    scrollAndHighlightVideo(videoCard, resourceId);
-                                }
-                            }, 500);
-                        }
-                    } else {
-                        scrollAndHighlightVideo(videoCard, resourceId);
-                    }
-                }, 300);
-                break;
-            
-            case 'Audio':
-                switchToTab('audio');
-                // Find and scroll to the corresponding audio card
-                setTimeout(() => {
-                    const audioCard = document.querySelector(`.audio-card[data-resource-id="${resourceId}"]`);
-                    if (audioCard) {
-                        // Scroll to the audio card
-                        audioCard.scrollIntoView({ 
-                            behavior: 'smooth', 
-                            block: 'center',
-                            inline: 'nearest'
-                        });
-                        
-                        // Add highlight effect
-                        audioCard.style.transition = 'all 0.5s ease';
-                        audioCard.style.boxShadow = '0 0 0 3px var(--primary), 0 10px 25px rgba(0, 0, 0, 0.15)';
-                        
-                        // Remove highlight after 2 seconds
-                        setTimeout(() => {
-                            audioCard.style.boxShadow = 'var(--shadow)';
-                        }, 2000);
-                        
-                        const playBtn = audioCard.querySelector('.play-pause-btn');
-                        if (playBtn) playBtn.click();
-                    }
-                }, 300);
-                break;
-        }
-    }
-
-    function scrollAndHighlightVideo(videoCard, resourceId) {
-        // Scroll to the video card
-        videoCard.scrollIntoView({ 
-            behavior: 'smooth', 
-            block: 'center',
-            inline: 'nearest'
-        });
-        
-        // Add highlight effect
-        videoCard.style.transition = 'all 0.5s ease';
-        videoCard.style.boxShadow = '0 0 0 3px var(--primary), 0 10px 25px rgba(0, 0, 0, 0.15)';
-        
-        // Remove highlight after 2 seconds
-        setTimeout(() => {
-            videoCard.style.boxShadow = 'var(--shadow)';
-        }, 2000);
-        
-        // Load and play the video
-        const thumbnail = videoCard.querySelector('.video-thumbnail');
-        if (thumbnail) thumbnail.click();
-    }
-
-    function switchToTab(tabName) {
-        // Clean up media before switching
-        cleanupAllMedia();
-        
-        // Remove active class from all tabs and contents
-        document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-
-        // Add active class to clicked tab
-        document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
-        document.getElementById(tabName).classList.add('active');
-        
-        // Scroll to top of the container when switching tabs
-        const container = document.querySelector('.container');
-        if (container) {
-            container.scrollTop = 0;
-        }
-    }
-
-    // Book Reader functionality
-    async function openBookReaderWithFallback(title, fileUrl, bookId) {
-        // Clean up previous PDF first
-        if (currentPdf) {
-            try {
-                currentPdf.destroy();
-            } catch (e) {
-                console.warn('Error cleaning up previous PDF:', e);
-            }
-            currentPdf = null;
-        }
-        
-        currentBookId = bookId;
-        progressTracked = false;
-        
-        const readerTitle = document.getElementById('readerTitle');
-        const readerContent = document.getElementById('readerContent');
-        const completionStatus = document.getElementById('completionStatus');
-        
-        readerTitle.textContent = title;
-        completionStatus.textContent = '';
-        
-        // Use the proxy URL instead of direct S3 URL
-        const proxyUrl = `https://mgi-login-worker.stevechikeabia.workers.dev/proxy-pdf/${encodeURIComponent(fileUrl)}`;
-        
-        try {
-            readerContent.innerHTML = '<div class="loading">Loading PDF...</div>';
-            document.getElementById('bookReader').classList.add('active');
-            
-            const loadingTask = pdfjsLib.getDocument(proxyUrl);
-            const pdf = await loadingTask.promise;
-            currentPdf = pdf; // Store for cleanup
-            
-            // If we get here, PDF.js worked - set up the PDF reader
-            await setupPdfReader(pdf, fileUrl, bookId);
-            
-        } catch (error) {
-            console.log('PDF.js failed, falling back to Google Docs viewer:', error);
-            // Use Google Docs viewer as fallback
-            useGoogleDocsViewer(title, fileUrl, bookId);
-        }
-    }
-
-    async function setupPdfReader(pdf, fileUrl, bookId) {
-        const readerContent = document.getElementById('readerContent');
-        const pageInfo = document.getElementById('pageInfo');
-        const prevPage = document.getElementById('prevPage');
-        const nextPage = document.getElementById('nextPage');
-        const completionStatus = document.getElementById('completionStatus');
-        
-        let currentPageNum = 1;
-        const totalPages = pdf.numPages;
-        
-        async function renderPage(pageNum) {
-            readerContent.innerHTML = '<div class="loading">Loading page...</div>';
-            
-            const page = await pdf.getPage(pageNum);
-            
-            // Mobile: scale up for readability, desktop: keep original
-            const isMobile = window.innerWidth < 768;
-            const scale = isMobile ? 5.0 : 1.5;
-            const viewport = page.getViewport({ scale: scale });
-        
-            const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d');
-            canvas.height = viewport.height;
-            canvas.width = viewport.width;
-            
-            const renderContext = {
-                canvasContext: context,
-                viewport: viewport
-            };
-            
-            await page.render(renderContext).promise;
-            
-            readerContent.innerHTML = '';
-            const container = document.createElement('div');
-            container.className = 'pdf-container';
-            container.appendChild(canvas);
-            canvas.className = 'pdf-page';
-            readerContent.appendChild(container);
-            
-            checkBookProgress(currentPageNum, totalPages);
-        }
-
-        function updatePageInfo() {
-            pageInfo.textContent = `Page ${currentPageNum} of ${totalPages}`;
-            prevPage.disabled = currentPageNum === 1;
-            nextPage.disabled = currentPageNum === totalPages;
-        }
-
-        // Event listeners for PDF navigation
-        prevPage.onclick = async () => {
-            if (currentPageNum > 1) {
-                currentPageNum--;
-                await renderPage(currentPageNum);
-                updatePageInfo();
-            }
-        };
-
-        nextPage.onclick = async () => {
-            if (currentPageNum < totalPages) {
-                currentPageNum++;
-                await renderPage(currentPageNum);
-                updatePageInfo();
-            }
-        };
-
-        // Keyboard navigation
-        document.addEventListener('keydown', function pdfKeyHandler(e) {
-            if (!document.getElementById('bookReader').classList.contains('active')) return;
-            
-            if (e.key === 'ArrowLeft' && currentPageNum > 1) {
-                currentPageNum--;
-                renderPage(currentPageNum);
-                updatePageInfo();
-            } else if (e.key === 'ArrowRight' && currentPageNum < totalPages) {
-                currentPageNum++;
-                renderPage(currentPageNum);
-                updatePageInfo();
-            }
-        });
-
-        // Initial render
-        await renderPage(currentPageNum);
-        updatePageInfo();
-    }
-
-    function useGoogleDocsViewer(title, fileUrl, bookId) {
-        const readerContent = document.getElementById('readerContent');
-        const completionStatus = document.getElementById('completionStatus');
-        
-        readerContent.innerHTML = `
-            <div class="google-docs-viewer">
-                <iframe 
-                    src="https://docs.google.com/gview?url=${encodeURIComponent(fileUrl)}&embedded=true" 
-                    style="width:100%; height:100%; border:none;"
-                    title="${title}"
-                ></iframe>
-            </div>
-        `;
-        
-        // For Google Docs viewer, we can't track page progress, so track completion when viewed
-        if (!progressTracked) {
-            progressTracked = true;
-            updateBookProgress(bookId);
-            completionStatus.textContent = '✓ Marked as completed';
-        }
-    }
-
-    function checkBookProgress(currentPage, totalPages) {
-        const completionStatus = document.getElementById('completionStatus');
-        
-        if (!progressTracked && currentPage >= Math.floor(totalPages * 0.8)) {
-            progressTracked = true;
-            updateBookProgress(currentBookId);
-            completionStatus.textContent = '✓ Marked as completed';
-        }
-    }
-
-    function closeBookReader() {
-        // Clean up PDF
-        if (currentPdf) {
-            try {
-                currentPdf.destroy();
-            } catch (e) {
-                console.warn('Error destroying PDF:', e);
-            }
-            currentPdf = null;
-        }
-        
-        // Close reader
-        document.getElementById('bookReader').classList.remove('active');
-        currentBookId = null;
-        progressTracked = false;
-    }
-
-    // Progress tracking functions
-    async function updateVideoProgress(resourceId) {
-        try {
-            const rowId = localStorage.getItem('userRowId');
-            if (!rowId) return;
-
-            const response = await fetch('https://mgi-login-worker.stevechikeabia.workers.dev/update_progress', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    row_id: rowId,
-                    resource_id: resourceId,
-                    type: 'video'
-                })
+                    this.style.transform = '';
+                }, 200);
             });
-
-            if (response.ok) {
-                console.log('✅ Video progress updated');
-                updateProgressUI();
-            } else {
-                console.error('❌ Failed to update video progress');
-            }
-        } catch (error) {
-            console.error('❌ Error updating video progress:', error);
-        }
-    }
-
-    async function updateAudioProgress(resourceId) {
-        try {
-            const rowId = localStorage.getItem('userRowId');
-            if (!rowId) return;
-
-            const response = await fetch('https://mgi-login-worker.stevechikeabia.workers.dev/update_progress', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    row_id: rowId,
-                    resource_id: resourceId,
-                    type: 'audio'
-                })
-            });
-
-            if (response.ok) {
-                console.log('✅ Audio progress updated');
-                updateProgressUI();
-            } else {
-                console.error('❌ Failed to update audio progress');
-            }
-        } catch (error) {
-            console.error('❌ Error updating audio progress:', error);
-        }
-    }
-
-    async function updateBookProgress(resourceId) {
-        try {
-            const rowId = localStorage.getItem('userRowId');
-            if (!rowId) return;
-
-            const response = await fetch('https://mgi-login-worker.stevechikeabia.workers.dev/update_progress', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    row_id: rowId,
-                    resource_id: resourceId,
-                    type: 'book'
-                })
-            });
-
-            if (response.ok) {
-                console.log('✅ Book progress updated');
-                updateProgressUI();
-            } else {
-                console.error('❌ Failed to update book progress');
-            }
-        } catch (error) {
-            console.error('❌ Error updating book progress:', error);
-        }
-    }
-
-    async function updateProgressUI() {
-        try {
-            const rowId = localStorage.getItem('userRowId');
-            const response = await fetch(`https://mgi-login-worker.stevechikeabia.workers.dev/get_user_data?row_id=${rowId}`);
-            
-            if (response.ok) {
-                const user = await response.json();
-                
-                // Update all progress stats
-                const statNumbers = document.querySelectorAll('.progress-stats .stat-number');
-                if (statNumbers.length >= 3) {
-                    statNumbers[0].textContent = user['Course Progress'] || 0;
-                    statNumbers[1].textContent = user['Video Progress'] || 0;
-                    statNumbers[2].textContent = user['Book Progress'] || 0;
-                }
-            }
-        } catch (error) {
-            console.error('❌ Error updating progress UI:', error);
-        }
-    }
-
-    // Course loading functions
-    async function loadCourses() {
-        const coursesContainer = document.querySelector('#courses .content-grid');
-        coursesContainer.innerHTML = '';
-
-        try {
-            const response = await fetch('https://mgi-login-worker.stevechikeabia.workers.dev/get_courses');
-            if (!response.ok) throw new Error('Failed to fetch courses');
-            
-            const courses = await response.json();
-            
-            if (courses.length > 0) {
-                courses.forEach(course => {
-                    const card = createCourseCard(course);
-                    coursesContainer.appendChild(card);
-                });
-            } else {
-                coursesContainer.innerHTML = '<p>No courses available at the moment.</p>';
-            }
-        } catch (error) {
-            console.error('❌ Error loading courses:', error);
-            coursesContainer.innerHTML = '<p style="color:red;">Failed to load courses.</p>';
-        }
-    }
-
-    function createCourseCard(course) {
-        const card = document.createElement('div');
-        card.className = 'course-card';
-        
-        card.innerHTML = `
-            <div class="course-image">
-                <img src="${course.image_url || 'https://via.placeholder.com/300x200?text=Course'}" alt="${course.title}">
-            </div>
-            <div class="course-content">
-                <h3 class="course-title">${course.title}</h3>
-                <p class="course-description">${course.description || 'No description available.'}</p>
-                <div class="course-meta">
-                    <span class="course-duration">⏱ ${course.duration || 'Self-paced'}</span>
-                    <span class="course-level">${course.level || 'All levels'}</span>
-                </div>
-                <button class="course-enroll-btn">Enroll Now</button>
-            </div>
-        `;
-
-        const enrollBtn = card.querySelector('.course-enroll-btn');
-        enrollBtn.addEventListener('click', () => {
-            alert(`Enrolling in: ${course.title}\n\nThis feature is coming soon!`);
-        });
-
-        return card;
-    }
-
-    // Window event handlers
-    function handleWindowResize() {
-        // Clean up expanded videos on mobile orientation changes
-        if (window.innerWidth < 768) {
-            const expandedVideos = document.querySelectorAll('.video-card.expanded');
-            expandedVideos.forEach(collapseVideo);
-        }
-    }
-
-    function handleVisibilityChange() {
-        if (document.hidden) {
-            // Page is hidden, pause all media
-            pauseAllMedia();
-        }
-    }
-
-    function pauseAllMedia() {
-        // Pause all videos
-        document.querySelectorAll('video').forEach(video => {
-            if (!video.paused) {
-                video.pause();
-            }
         });
         
-        // Pause all audio
-        document.querySelectorAll('audio').forEach(audio => {
-            if (!audio.paused) {
-                audio.pause();
-            }
-        });
-    }
-
-    function cleanupAllMedia() {
-        // Clean up all videos
-        document.querySelectorAll('.video-card.expanded').forEach(collapseVideo);
-        
-        // Clean up all audio players
-        document.querySelectorAll('.audio-card').forEach(card => {
-            const audio = card._audioElement;
-            if (audio) {
-                try {
-                    audio.pause();
-                    audio.currentTime = 0;
-                    audio.src = '';
-                    
-                    // Remove event listeners
-                    const handlers = card._audioHandlers;
-                    if (handlers) {
-                        Object.keys(handlers).forEach(event => {
-                            audio.removeEventListener(event, handlers[event]);
-                        });
-                    }
-                    
-                    delete card._audioElement;
-                    delete card._audioHandlers;
-                } catch (e) {
-                    console.warn('Error cleaning up audio:', e);
-                }
-            }
-        });
-        
-        // Close book reader
-        closeBookReader();
-    }
-</script>
+    </script>
+</body>
+</html>
