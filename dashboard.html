@@ -1862,6 +1862,7 @@
 
         
         // Helper function to create an audio card with memory management
+                
         function createAudioCard({ topic, description, author, image, file, resourceType, featured, resourceId }) {
             const imageUrl = Array.isArray(image) && image.length > 0
                 ? image[0].url
@@ -1906,13 +1907,13 @@
                 </div>
             `;
 
-            // Audio player with simple mobile compatibility
+            // Audio player
             const playPauseBtn = card.querySelector('.play-pause-btn');
             const progressFill = card.querySelector('.progress-fill');
             const currentTimeEl = card.querySelector('.current-time');
             const durationEl = card.querySelector('.duration');
             
-            const audio = new Audio(fileUrl); // Direct source assignment like your working code
+            const audio = new Audio(fileUrl);
             let isPlaying = false;
             let progressTracked = false;
 
@@ -1921,6 +1922,7 @@
 
             // Format time function
             function formatTime(seconds) {
+                if (isNaN(seconds)) return '0:00';
                 const mins = Math.floor(seconds / 60);
                 const secs = Math.floor(seconds % 60);
                 return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
@@ -1955,38 +1957,47 @@
                 }
             };
 
+            const errorHandler = (e) => {
+                console.error('Audio error:', e);
+                playPauseBtn.textContent = '❌';
+                playPauseBtn.disabled = true;
+            };
+
             // Add event listeners
             audio.addEventListener('loadedmetadata', loadedMetadataHandler);
             audio.addEventListener('timeupdate', timeUpdateHandler);
             audio.addEventListener('ended', endedHandler);
+            audio.addEventListener('error', errorHandler);
 
             // Store handlers for cleanup
             card._audioHandlers = {
                 loadedmetadata: loadedMetadataHandler,
                 timeupdate: timeUpdateHandler,
-                ended: endedHandler
+                ended: endedHandler,
+                error: errorHandler
             };
 
-            // Simple play/pause functionality like your working code
+            // Play/pause functionality
             playPauseBtn.addEventListener('click', () => {
                 if (isPlaying) {
                     audio.pause();
                     playPauseBtn.textContent = '▶';
+                    isPlaying = false;
                 } else {
                     audio.play().catch(e => {
                         console.warn('Audio play failed:', e);
-                        // Simple fallback - just reset state
                         playPauseBtn.textContent = '▶';
                         isPlaying = false;
                     });
                     playPauseBtn.textContent = '⏸';
+                    isPlaying = true;
                 }
-                isPlaying = !isPlaying;
             });
 
             return card;
         }
-        // Global media cleanup function
+
+        // Enhanced cleanup function to properly stop all media
         function cleanupAllMedia() {
             console.log('🧹 Cleaning up all media elements...');
             
@@ -1995,13 +2006,27 @@
                 collapseVideo(card);
             });
             
-            // Clean up audio players
+            // Clean up audio players - STOP ALL PLAYING AUDIO
             document.querySelectorAll('.audio-card').forEach(card => {
                 const audio = card._audioElement;
                 if (audio) {
                     try {
+                        // Stop the audio completely
                         audio.pause();
                         audio.currentTime = 0;
+                        
+                        // Reset UI state
+                        const playBtn = card.querySelector('.play-pause-btn');
+                        if (playBtn) {
+                            playBtn.textContent = '▶';
+                            playBtn.disabled = false;
+                        }
+                        
+                        const progressFill = card.querySelector('.progress-fill');
+                        if (progressFill) progressFill.style.width = '0%';
+                        
+                        const currentTime = card.querySelector('.current-time');
+                        if (currentTime) currentTime.textContent = '0:00';
                         
                         // Remove event listeners
                         if (card._audioHandlers) {
@@ -2026,9 +2051,9 @@
             }
         }
 
-        // Call cleanup when switching tabs
+        // Update the switchToTab function to call cleanup
         function switchToTab(tabName) {
-            // Clean up media before switching
+            // Clean up media before switching tabs
             cleanupAllMedia();
             
             // Remove active class from all tabs and contents
