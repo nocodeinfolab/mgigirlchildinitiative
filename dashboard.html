@@ -1233,6 +1233,7 @@
 
             // Load resources
             await loadResources();
+            await loadCourses();
         });
         
         // --- Fetch resources for Books, Videos and Audio ---
@@ -2057,7 +2058,7 @@
                 if (!response.ok) throw new Error('Failed to fetch courses');
         
                 const courses = await response.json();
-                console.log('Courses data:', courses);
+                
                 coursesContainer.innerHTML = '';
         
                 if (!Array.isArray(courses) || courses.length === 0) {
