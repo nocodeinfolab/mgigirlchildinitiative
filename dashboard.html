@@ -1906,16 +1906,16 @@
                 </div>
             `;
 
-            // Audio player with cleanup
+            // Audio player with mobile compatibility
             const playPauseBtn = card.querySelector('.play-pause-btn');
             const progressFill = card.querySelector('.progress-fill');
             const currentTimeEl = card.querySelector('.current-time');
             const durationEl = card.querySelector('.duration');
             
             const audio = new Audio();
-            audio.preload = 'metadata'; // Only load metadata
             let isPlaying = false;
             let progressTracked = false;
+            let audioLoaded = false;
 
             // Store audio reference for cleanup
             card._audioElement = audio;
@@ -1930,10 +1930,23 @@
             // Event handlers
             const loadedMetadataHandler = () => {
                 durationEl.textContent = formatTime(audio.duration);
+                audioLoaded = true;
+            };
+
+            const canPlayHandler = () => {
+                audioLoaded = true;
+                console.log('Audio can play through');
+            };
+
+            const errorHandler = (e) => {
+                console.error('Audio error:', e);
+                console.error('Audio source:', audio.src);
+                playPauseBtn.textContent = '❌';
+                playPauseBtn.disabled = true;
             };
 
             const timeUpdateHandler = () => {
-                if (audio.duration) {
+                if (audio.duration && !isNaN(audio.duration)) {
                     const progress = (audio.currentTime / audio.duration) * 100;
                     progressFill.style.width = `${progress}%`;
                     currentTimeEl.textContent = formatTime(audio.currentTime);
@@ -1950,36 +1963,94 @@
             const endedHandler = () => {
                 isPlaying = false;
                 playPauseBtn.textContent = '▶';
-                progressFill.style.width = '100%';
-                currentTimeEl.textContent = durationEl.textContent;
+                if (audio.duration && !isNaN(audio.duration)) {
+                    progressFill.style.width = '100%';
+                    currentTimeEl.textContent = formatTime(audio.duration);
+                }
             };
 
             // Add event listeners
             audio.addEventListener('loadedmetadata', loadedMetadataHandler);
+            audio.addEventListener('canplaythrough', canPlayHandler);
+            audio.addEventListener('error', errorHandler);
             audio.addEventListener('timeupdate', timeUpdateHandler);
             audio.addEventListener('ended', endedHandler);
 
             // Store handlers for cleanup
             card._audioHandlers = {
                 loadedmetadata: loadedMetadataHandler,
+                canplaythrough: canPlayHandler,
+                error: errorHandler,
                 timeupdate: timeUpdateHandler,
                 ended: endedHandler
             };
 
-            // Play/pause functionality
-            playPauseBtn.addEventListener('click', () => {
+            // Mobile-compatible play/pause functionality
+            playPauseBtn.addEventListener('click', async () => {
                 if (isPlaying) {
+                    // Pause audio
                     audio.pause();
                     playPauseBtn.textContent = '▶';
+                    isPlaying = false;
                 } else {
-                    // Set source only when playing to avoid preloading
-                    if (!audio.src) {
-                        audio.src = fileUrl;
+                    try {
+                        // For mobile, we need to set the source and wait for it to load
+                        if (!audio.src) {
+                            console.log('Setting audio source:', fileUrl);
+                            audio.src = fileUrl;
+                            audio.preload = 'metadata';
+                            
+                            // Wait for the audio to be ready to play
+                            await new Promise((resolve, reject) => {
+                                const loadHandler = () => {
+                                    audio.removeEventListener('canplaythrough', loadHandler);
+                                    audio.removeEventListener('error', errorHandler);
+                                    resolve();
+                                };
+                                
+                                const errorHandler = (e) => {
+                                    audio.removeEventListener('canplaythrough', loadHandler);
+                                    audio.removeEventListener('error', errorHandler);
+                                    reject(e);
+                                };
+                                
+                                audio.addEventListener('canplaythrough', loadHandler);
+                                audio.addEventListener('error', errorHandler);
+                            });
+                        }
+
+                        // Mobile browsers require user interaction to play audio
+                        const playPromise = audio.play();
+                        
+                        if (playPromise !== undefined) {
+                            playPromise.then(() => {
+                                // Audio started successfully
+                                playPauseBtn.textContent = '⏸';
+                                isPlaying = true;
+                            }).catch(error => {
+                                console.warn('Audio play failed:', error);
+                                // Fallback: try to set audio source and prompt user to tap again
+                                if (!audio.src) {
+                                    audio.src = fileUrl;
+                                }
+                                playPauseBtn.textContent = '▶';
+                                isPlaying = false;
+                                
+                                // Show user-friendly message
+                                alert('Tap the play button again to start audio. Some mobile browsers require two taps for audio playback.');
+                            });
+                        }
+                    } catch (error) {
+                        console.error('Error preparing audio:', error);
+                        playPauseBtn.textContent = '❌';
                     }
-                    audio.play().catch(e => console.warn('Audio play failed:', e));
-                    playPauseBtn.textContent = '⏸';
                 }
-                isPlaying = !isPlaying;
+            });
+
+            // Add touch event for better mobile handling
+            playPauseBtn.addEventListener('touchend', (e) => {
+                e.preventDefault(); // Prevent mouse event from also firing
+                playPauseBtn.click();
             });
 
             return card;
@@ -1998,10 +2069,24 @@
                 const audio = card._audioElement;
                 if (audio) {
                     try {
+                        // Reset audio element completely
                         audio.pause();
                         audio.currentTime = 0;
                         audio.src = '';
                         audio.load();
+                        
+                        // Reset UI
+                        const playBtn = card.querySelector('.play-pause-btn');
+                        if (playBtn) {
+                            playBtn.textContent = '▶';
+                            playBtn.disabled = false;
+                        }
+                        
+                        const progressFill = card.querySelector('.progress-fill');
+                        if (progressFill) progressFill.style.width = '0%';
+                        
+                        const currentTime = card.querySelector('.current-time');
+                        if (currentTime) currentTime.textContent = '0:00';
                         
                         // Remove event listeners
                         if (card._audioHandlers) {
