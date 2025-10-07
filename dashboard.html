@@ -1868,20 +1868,16 @@
                 ? image[0].url
                 : 'https://via.placeholder.com/300x200?text=No+Image';
             const fileUrl = Array.isArray(file) && file.length > 0 ? file[0].url : '';
-            const type = resourceType || 'Audio';
             const title = topic || 'Untitled';
             const desc = description || 'No description available.';
             const writer = author || 'Unknown Author';
 
             const card = document.createElement('div');
             card.classList.add('audio-card');
-            card.setAttribute('data-resource-id', resourceId);
+            card.dataset.resourceId = resourceId;
 
-            // Determine featured tag
             let tagLabel = '';
-            if (featured && featured.toLowerCase().includes('featured')) {
-                tagLabel = 'FEATURED AUDIO';
-            }
+            if (featured && featured.toLowerCase().includes('featured')) tagLabel = 'FEATURED AUDIO';
 
             card.innerHTML = `
                 <div class="audio-thumbnail">
@@ -1897,7 +1893,7 @@
                     <button class="play-pause-btn">▶</button>
                     <div class="audio-progress">
                         <div class="progress-bar">
-                            <div class="progress-fill" style="width: 0%"></div>
+                            <div class="progress-fill" style="width:0%"></div>
                         </div>
                         <div class="audio-time">
                             <span class="current-time">0:00</span>
@@ -1905,90 +1901,68 @@
                         </div>
                     </div>
                 </div>
+                <audio preload="metadata" src="${fileUrl}" style="display:none;"></audio>
             `;
 
-            // Audio player
             const playPauseBtn = card.querySelector('.play-pause-btn');
             const progressFill = card.querySelector('.progress-fill');
             const currentTimeEl = card.querySelector('.current-time');
             const durationEl = card.querySelector('.duration');
-            
-            const audio = new Audio(fileUrl);
+            const audio = card.querySelector('audio'); // ✅ This one is inside DOM now
             let isPlaying = false;
             let progressTracked = false;
 
-            // Store audio reference for cleanup
-            card._audioElement = audio;
-
-            // Format time function
-            function formatTime(seconds) {
-                if (isNaN(seconds)) return '0:00';
-                const mins = Math.floor(seconds / 60);
-                const secs = Math.floor(seconds % 60);
-                return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+            function formatTime(sec) {
+                if (isNaN(sec)) return '0:00';
+                const m = Math.floor(sec / 60);
+                const s = Math.floor(sec % 60);
+                return `${m}:${s < 10 ? '0' : ''}${s}`;
             }
 
-            // Event handlers
-            const loadedMetadataHandler = () => {
+            // Update duration once metadata is loaded
+            audio.addEventListener('loadedmetadata', () => {
                 durationEl.textContent = formatTime(audio.duration);
-            };
+            });
 
-            const timeUpdateHandler = () => {
-                if (audio.duration && !isNaN(audio.duration)) {
+            // ✅ Now progress updates properly
+            audio.addEventListener('timeupdate', () => {
+                if (audio.duration) {
                     const progress = (audio.currentTime / audio.duration) * 100;
                     progressFill.style.width = `${progress}%`;
                     currentTimeEl.textContent = formatTime(audio.currentTime);
 
-                    // Track progress when 80% listened
-                    if (progress >= 80 && !progressTracked && !completedResources.has(resourceId)) {
+                    if (progress >= 80 && !progressTracked) {
                         progressTracked = true;
                         completedResources.add(resourceId);
                         updateAudioProgress(resourceId);
                     }
                 }
-            };
+            });
 
-            const endedHandler = () => {
-                isPlaying = false;
+            audio.addEventListener('ended', () => {
                 playPauseBtn.textContent = '▶';
-                if (audio.duration && !isNaN(audio.duration)) {
-                    progressFill.style.width = '100%';
-                    currentTimeEl.textContent = formatTime(audio.duration);
-                }
-            };
+                progressFill.style.width = '100%';
+                isPlaying = false;
+            });
 
-            const errorHandler = (e) => {
-                console.error('Audio error:', e);
-                playPauseBtn.textContent = '❌';
-                playPauseBtn.disabled = true;
-            };
-
-            // Add event listeners
-            audio.addEventListener('loadedmetadata', loadedMetadataHandler);
-            audio.addEventListener('timeupdate', timeUpdateHandler);
-            audio.addEventListener('ended', endedHandler);
-            audio.addEventListener('error', errorHandler);
-
-            // Store handlers for cleanup
-            card._audioHandlers = {
-                loadedmetadata: loadedMetadataHandler,
-                timeupdate: timeUpdateHandler,
-                ended: endedHandler,
-                error: errorHandler
-            };
-
-            // Play/pause functionality
+            // Stop other audios when one starts
             playPauseBtn.addEventListener('click', () => {
+                document.querySelectorAll('.audio-card').forEach(c => {
+                    if (c !== card) {
+                        const otherAudio = c.querySelector('audio');
+                        if (otherAudio && !otherAudio.paused) {
+                            otherAudio.pause();
+                            c.querySelector('.play-pause-btn').textContent = '▶';
+                        }
+                    }
+                });
+
                 if (isPlaying) {
                     audio.pause();
                     playPauseBtn.textContent = '▶';
                     isPlaying = false;
                 } else {
-                    audio.play().catch(e => {
-                        console.warn('Audio play failed:', e);
-                        playPauseBtn.textContent = '▶';
-                        isPlaying = false;
-                    });
+                    audio.play();
                     playPauseBtn.textContent = '⏸';
                     isPlaying = true;
                 }
@@ -2006,42 +1980,15 @@
                 collapseVideo(card);
             });
             
-            // Clean up audio players - STOP ALL PLAYING AUDIO
-            document.querySelectorAll('.audio-card').forEach(card => {
-                const audio = card._audioElement;
-                if (audio) {
-                    try {
-                        // Stop the audio completely
-                        audio.pause();
-                        audio.currentTime = 0;
-                        
-                        // Reset UI state
-                        const playBtn = card.querySelector('.play-pause-btn');
-                        if (playBtn) {
-                            playBtn.textContent = '▶';
-                            playBtn.disabled = false;
-                        }
-                        
-                        const progressFill = card.querySelector('.progress-fill');
-                        if (progressFill) progressFill.style.width = '0%';
-                        
-                        const currentTime = card.querySelector('.current-time');
-                        if (currentTime) currentTime.textContent = '0:00';
-                        
-                        // Remove event listeners
-                        if (card._audioHandlers) {
-                            Object.entries(card._audioHandlers).forEach(([event, handler]) => {
-                                audio.removeEventListener(event, handler);
-                            });
-                            delete card._audioHandlers;
-                        }
-                        
-                        delete card._audioElement;
-                    } catch (e) {
-                        console.warn('Error cleaning up audio:', e);
-                    }
-                }
+            document.querySelectorAll('.audio-card audio').forEach(audio => {
+                audio.pause();
+                audio.currentTime = 0;
             });
+
+            document.querySelectorAll('.audio-card .play-pause-btn').forEach(btn => {
+                btn.textContent = '▶';
+            });
+
             
             // Clean up PDF reader if open
             const bookReader = document.getElementById('bookReader');
