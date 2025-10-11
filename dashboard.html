@@ -1389,10 +1389,10 @@
                 this.pageQueue.push(page);
         
                 // Evict oldest pages if over maxPages
-                // while (this.pageQueue.length > this.maxPages) {
-                //    const removePage = this.pageQueue.shift();
-                //    this._removePageFromDOM(removePage);
-                //}
+                while (this.pageQueue.length > this.maxPages) {
+                    const removePage = this.pageQueue.shift();
+                    this._removePageFromDOM(removePage);
+                }
             }
         
             _removePageFromDOM(page) {
