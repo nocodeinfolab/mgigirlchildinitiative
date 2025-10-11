@@ -1301,10 +1301,18 @@
             }
         
             async loadNextPage() {
-                if (this.isLoading || !this.hasMore) return;
+                console.log('🌀 loadNextPage called: isLoading =', this.isLoading, ', hasMore =', this.hasMore, ', currentPage =', this.currentPage);
+            
+                if (this.isLoading || !this.hasMore) {
+                    console.log('⛔️ Stopping — isLoading or hasMore prevented new load.');
+                    return;
+                }
+            
                 const nextPage = this.currentPage + 1;
+                console.log('📘 Fetching next page:', nextPage);
                 await this.loadPage(nextPage);
             }
+
         
             async loadPage(page) {
                 if (this.itemsByPage.has(page)) {
