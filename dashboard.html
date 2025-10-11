@@ -1146,11 +1146,6 @@
         let currentVideoPage = 1;
         const videosPerPage = 12;
         let currentPdf = null;
-        // make these globals so switchToTab can reattach observers when tabs become visible
-        let booksScroller = null;
-        let audioScroller = null;
-        let videosScroller = null;
-
 
         document.addEventListener('DOMContentLoaded', async () => {
             const rowId = localStorage.getItem('userRowId');
@@ -1430,35 +1425,6 @@
                 Array.from(this.renderedPages).forEach(p => this._removePageFromDOM(p));
                 this.renderedPages.clear();
             }
-            reobserve() {
-                // Ensure sentinel exists
-                if (!this.sentinel) this._createSentinel();
-
-                // If no IO yet, set it up now
-                if (!this.io) {
-                    this._setupObserver();
-                    console.log('🔁 Observer created for', this.type);
-                    return;
-                }
-
-                // Unobserve then observe again once layout is settled
-                try {
-                    this.io.unobserve(this.sentinel);
-                } catch (e) { /* ignore */ }
-
-                // Use requestAnimationFrame so re-observe happens after CSS/display changes
-                requestAnimationFrame(() => {
-                    try {
-                        this.io.observe(this.sentinel);
-                        console.log('🔁 Reattached observer for', this.type);
-                    } catch (err) {
-                        console.warn('Reattach failed, recreating observer for', this.type, err);
-                        // Fallback: recreate the observer
-                        this._setupObserver();
-                    }
-                });
-            }
-
         }
         // ---------- end ResourceScroller ----------
 
@@ -1496,9 +1462,10 @@
                     featuredContainer.innerHTML = '<p>No featured resources available this week.</p>';
                 }
         
+                // Replace the calls to loadBookPage(1), loadAudioPage(1), loadVideoPage(1)
+                // with scroller initialization (put this where you currently call loadResources() or at the end of loadResources())
                 
-                
-                booksScroller = new ResourceScroller({
+                const booksScroller = new ResourceScroller({
                   containerSelector: '#books .content-grid',
                   type: 'Book',
                   pageSize: resourcesPerPage,
@@ -1506,8 +1473,8 @@
                   rootSelector: '.container',
                   maxPages: 5
                 });
-
-                audioScroller = new ResourceScroller({
+                
+                const audioScroller = new ResourceScroller({
                   containerSelector: '#audio .content-grid',
                   type: 'Audio',
                   pageSize: resourcesPerPage,
@@ -1515,8 +1482,8 @@
                   rootSelector: '.container',
                   maxPages: 4
                 });
-
-                videosScroller = new ResourceScroller({
+                
+                const videosScroller = new ResourceScroller({
                   containerSelector: '#videos .content-grid',
                   type: 'Video',
                   pageSize: (typeof videosPerPage !== 'undefined') ? videosPerPage : resourcesPerPage,
@@ -1524,7 +1491,6 @@
                   rootSelector: '.container',
                   maxPages: 4
                 });
-
                 
                 // init all (they will auto-load first page)
                 await booksScroller.init();
@@ -2245,35 +2211,23 @@
 
         // Update the switchToTab function to call cleanup
         function switchToTab(tabName) {
-            // existing cleanup + show/hide code (unchanged)
+            // Clean up media before switching tabs
             cleanupAllMedia();
+            
+            // Remove active class from all tabs and contents
             document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
 
+            // Add active class to clicked tab
             document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
             document.getElementById(tabName).classList.add('active');
-
-            // Scroll to top when switching tabs
+            
+            // Scroll to top of the container when switching tabs
             const container = document.querySelector('.container');
-            if (container) container.scrollTop = 0;
-
-            // *** New: reattach observer for the scroller of the active tab ***
-            // small timeout allows the CSS 'display:block' to take effect before reobserve
-            setTimeout(() => {
-                switch (tabName) {
-                    case 'books':
-                        if (booksScroller) booksScroller.reobserve();
-                        break;
-                    case 'videos':
-                        if (videosScroller) videosScroller.reobserve();
-                        break;
-                    case 'audio':
-                        if (audioScroller) audioScroller.reobserve();
-                        break;
-                }
-            }, 60); // 60ms is enough for layout; adjust if you have long animations
+            if (container) {
+                container.scrollTop = 0;
+            }
         }
-
         // Clean up when page becomes hidden
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) {
