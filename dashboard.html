@@ -1150,6 +1150,7 @@
         let booksScroller = null;
         let audioScroller = null;
         let videosScroller = null;
+        let coursesScroller = null;
 
 
         document.addEventListener('DOMContentLoaded', async () => {
@@ -1239,7 +1240,7 @@
 
             // Load resources
             await loadResources();
-            await loadCourses();
+            
         });
         
         // --- Fetch resources for Books, Videos and Audio ---
@@ -1251,25 +1252,31 @@
         let hasMoreAudio = true;
         // ---------- Infinite Scroll + Paged Virtualization helper ----------
         class ResourceScroller {
-            constructor({ containerSelector, type, pageSize, createCardFn, rootSelector = '.container', maxPages = 5 }) {
+            constructor({ containerSelector, type, pageSize, createCardFn, rootSelector = '.container', maxPages = 5, apiEndpoint = null }) {
                 this.container = document.querySelector(containerSelector);
                 if (!this.container) throw new Error('Container not found: ' + containerSelector);
-                this.root = document.querySelector(rootSelector) || null; // scrolling root for IntersectionObserver
+
+                // Accept null (or falsy) rootSelector properly:
+                this.rootSelector = (typeof rootSelector === 'string' && rootSelector.trim() !== '') ? rootSelector : null;
+                this.root = this.rootSelector ? document.querySelector(this.rootSelector) : null;
+
                 this.type = type;
+                this.apiEndpoint = apiEndpoint; // if provided, scroller will use this endpoint when fetching
                 this.pageSize = pageSize;
                 this.createCardFn = createCardFn;
                 this.maxPages = maxPages;
-        
+
                 this.itemsByPage = new Map();   // pageNumber -> [resources]
                 this.renderedPages = new Set(); // pages currently in DOM
                 this.pageQueue = [];            // order of rendered pages (oldest first)
                 this.currentPage = 0;
                 this.isLoading = false;
                 this.hasMore = true;
-        
+
                 this.sentinel = null;
                 this.io = null;
             }
+
         
             async init() {
                 this._createSentinel();
@@ -1350,15 +1357,27 @@
                 this.container.appendChild(loading);
         
                 try {
-                    const url = `https://mgi-login-worker.stevechikeabia.workers.dev/get_resources?type=${encodeURIComponent(this.type)}&page=${page}&limit=${this.pageSize}`;
+                    // Build fetch URL: either custom apiEndpoint or default get_resources with type
+                    let url;
+                    if (this.apiEndpoint) {
+                        // apiEndpoint should be like 'https://.../get_courses' (no query) or already with query params
+                        url = `${this.apiEndpoint}${this.apiEndpoint.includes('?') ? '&' : '?'}page=${page}&limit=${this.pageSize}`;
+                    } else {
+                        url = `https://mgi-login-worker.stevechikeabia.workers.dev/get_resources?type=${encodeURIComponent(this.type)}&page=${page}&limit=${this.pageSize}`;
+                    }
+
                     const res = await fetch(url);
                     if (!res.ok) throw new Error('Network error while loading resources');
-        
+
                     const data = await res.json();
-                    const resources = data.resources || [];
+
+                    // Support both shapes:
+                    // - get_resources -> { resources: [...], pagination: {...} }
+                    // - get_courses  -> { courses: [...], pagination: {...} }
+                    const resources = data.resources || data.courses || [];
                     this.itemsByPage.set(page, resources);
                     this.hasMore = (data.pagination && data.pagination.hasNext) ?? false;
-        
+
                     this._renderPage(page);
                     this.currentPage = page;
                 } catch (err) {
@@ -1368,6 +1387,7 @@
                     const l = this.container.querySelector('.loading');
                     if (l) l.remove();
                 }
+
             }
         
             _renderPage(page) {
@@ -1518,7 +1538,7 @@
                   type: 'Book',
                   pageSize: resourcesPerPage,
                   createCardFn: createBookCard,
-                  rootSelector: 'null',
+                  rootSelector: null, // use window viewport
                   maxPages: 5
                 });
 
@@ -1527,7 +1547,7 @@
                   type: 'Audio',
                   pageSize: resourcesPerPage,
                   createCardFn: createAudioCard,
-                  rootSelector: 'null',
+                  rootSelector: null,
                   maxPages: 4
                 });
 
@@ -1536,15 +1556,27 @@
                   type: 'Video',
                   pageSize: (typeof videosPerPage !== 'undefined') ? videosPerPage : resourcesPerPage,
                   createCardFn: createVideoCard,
-                  rootSelector: 'null',
+                  rootSelector: null,
                   maxPages: 4
                 });
 
-                
+                // Courses scroller: use the get_courses endpoint
+                coursesScroller = new ResourceScroller({
+                  containerSelector: '#courses .content-grid',
+                  type: 'Course',
+                  pageSize: resourcesPerPage,
+                  createCardFn: createCourseCard,
+                  rootSelector: null,
+                  maxPages: 4,
+                  apiEndpoint: 'https://mgi-login-worker.stevechikeabia.workers.dev/get_courses'
+                });
+
                 // init all (they will auto-load first page)
                 await booksScroller.init();
                 await audioScroller.init();
                 await videosScroller.init();
+                await coursesScroller.init();
+
 
         
             } catch (error) {
@@ -2230,6 +2262,44 @@
 
             return card;
         }
+        function createCourseCard(course) {
+            // course is expected to have fields like "Course Name", "Course ID", "Lesson 1"...
+            const courseName = course['Course Name'] || 'Untitled Course';
+            const courseId = course['Course ID'] || '';
+            const lessons = [];
+
+            // gather lesson fields (Lesson 1..20)
+            for (let i = 1; i <= 50; i++) { // 50 to be generous; adjust if you have fewer
+                const key = `Lesson ${i}`;
+                if (course[key] && course[key].fileName && course[key].fileUrl) {
+                    lessons.push(course[key]);
+                }
+            }
+
+            const card = document.createElement('div');
+            card.classList.add('course-card');
+            card.dataset.resourceId = courseId;
+
+            card.innerHTML = `
+                <h3 class="card-title">${courseName}</h3>
+                <p class="card-description">${lessons.length} lessons</p>
+                <ul class="lessons-list"></ul>
+            `;
+
+            const list = card.querySelector('.lessons-list');
+            lessons.forEach((lesson, idx) => {
+                const li = document.createElement('li');
+                li.classList.add('lesson-item');
+                li.innerHTML = `<span>📘 ${lesson.fileName}</span><div class="lesson-status"></div>`;
+                li.addEventListener('click', () => {
+                    openLessonModal(courseName, courseId, lesson.fileName, lesson.fileUrl, idx, lessons.length);
+                });
+                list.appendChild(li);
+            });
+
+            return card;
+        }
+
 
         // Enhanced cleanup function to properly stop all media
         function cleanupAllMedia() {
@@ -2285,8 +2355,12 @@
                     case 'audio':
                         if (audioScroller) audioScroller.reobserve();
                         break;
+                    case 'courses':
+                        if (coursesScroller) coursesScroller.reobserve();
+                        break;
                 }
-            }, 60); // 60ms is enough for layout; adjust if you have long animations
+            }, 60);
+
         }
 
         // Clean up when page becomes hidden
