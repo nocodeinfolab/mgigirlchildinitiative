@@ -1284,21 +1284,20 @@
             }
         
             _setupObserver() {
+                        _setupObserver() {
                 if (!this.sentinel) return;
                 
-                // Use document as root if container doesn't have its own scroll
-                const useDocumentRoot = !this.root || this.root === document.querySelector('.container');
-                
+                // Use the viewport as root (null) since we want to detect when user scrolls to bottom of screen
                 const options = {
-                    root: useDocumentRoot ? null : this.root,
-                    rootMargin: '600px 0px 600px 0px', // prefetch earlier
+                    root: null, // viewport
+                    rootMargin: '600px 0px', // load when 600px from bottom
                     threshold: 0
                 };
                 
                 this.io = new IntersectionObserver(entries => {
                     entries.forEach(entry => {
-                        if (entry.isIntersecting) {
-                            console.log(`🎯 Sentinel for ${this.type} is intersecting, loading next page`);
+                        if (entry.isIntersecting && !this.isLoading && this.hasMore) {
+                            console.log(`🎯 ${this.type} sentinel intersecting, loading page ${this.currentPage + 1}`);
                             this.loadNextPage();
                         }
                     });
@@ -1309,15 +1308,36 @@
         
             async loadNextPage() {
                 console.log('🌀 loadNextPage called: isLoading =', this.isLoading, ', hasMore =', this.hasMore, ', currentPage =', this.currentPage);
-            
+
                 if (this.isLoading || !this.hasMore) {
                     console.log('⛔️ Stopping — isLoading or hasMore prevented new load.');
                     return;
                 }
-            
+
+                this.isLoading = true;
                 const nextPage = this.currentPage + 1;
                 console.log('📘 Fetching next page:', nextPage);
-                await this.loadPage(nextPage);
+                
+                try {
+                    const url = `https://mgi-login-worker.stevechikeabia.workers.dev/get_resources?type=${encodeURIComponent(this.type)}&page=${nextPage}&limit=${this.pageSize}`;
+                    const res = await fetch(url);
+                    if (!res.ok) throw new Error('Network error while loading resources');
+
+                    const data = await res.json();
+                    const resources = data.resources || [];
+                    this.itemsByPage.set(nextPage, resources);
+                    this.hasMore = (data.pagination && data.pagination.hasNext) ?? false;
+
+                    this._renderPage(nextPage);
+                    this.currentPage = nextPage;
+                    
+                    console.log(`✅ ${this.type} page ${nextPage} loaded. Has more: ${this.hasMore}`);
+                    
+                } catch (err) {
+                    console.error('ResourceScroller loadPage error:', err);
+                } finally {
+                    this.isLoading = false;
+                }
             }
 
         
@@ -1441,16 +1461,20 @@
         async function loadResources() {
             const booksContainer = document.querySelector('#books .content-grid');
             const audioContainer = document.querySelector('#audio .content-grid');
-            const videosContainer = document.querySelector('#videos .content-grid');
             const featuredContainer = document.querySelector('.featured-grid');
 
             // Clear existing placeholder cards
             booksContainer.innerHTML = '';
             audioContainer.innerHTML = '';
-            videosContainer.innerHTML = '';
             featuredContainer.innerHTML = '';
 
             try {
+                // Reset pagination states
+                currentBookPage = 1;
+                currentAudioPage = 1;
+                hasMoreBooks = true;
+                hasMoreAudio = true;
+
                 // Load featured resources (limited to 3)
                 const featuredResponse = await fetch('https://mgi-login-worker.stevechikeabia.workers.dev/get_resources?featured=true&limit=3');
                 if (!featuredResponse.ok) throw new Error('Failed to fetch featured resources');
@@ -1466,38 +1490,38 @@
                     featuredContainer.innerHTML = '<p>No featured resources available this week.</p>';
                 }
 
-                // Initialize scrollers but don't start loading until tab is active
-                window.booksScroller = new ResourceScroller({
+                // Initialize scrollers
+                const booksScroller = new ResourceScroller({
                     containerSelector: '#books .content-grid',
                     type: 'Book',
                     pageSize: resourcesPerPage,
                     createCardFn: createBookCard,
-                    rootSelector: '.container',
+                    rootSelector: null, // Use viewport
                     maxPages: 5
                 });
                 
-                window.audioScroller = new ResourceScroller({
+                const audioScroller = new ResourceScroller({
                     containerSelector: '#audio .content-grid',
                     type: 'Audio',
                     pageSize: resourcesPerPage,
                     createCardFn: createAudioCard,
-                    rootSelector: '.container',
+                    rootSelector: null, // Use viewport
                     maxPages: 4
                 });
                 
-                window.videosScroller = new ResourceScroller({
+                const videosScroller = new ResourceScroller({
                     containerSelector: '#videos .content-grid',
                     type: 'Video',
                     pageSize: (typeof videosPerPage !== 'undefined') ? videosPerPage : resourcesPerPage,
                     createCardFn: createVideoCard,
-                    rootSelector: '.container',
+                    rootSelector: null, // Use viewport
                     maxPages: 4
                 });
-
-                // Load first page for home tab resources immediately
-                await window.booksScroller.loadNextPage();
-                await window.audioScroller.loadNextPage();
-                await window.videosScroller.loadNextPage();
+                
+                // Initialize all (they will auto-load first page)
+                await booksScroller.init();
+                await audioScroller.init();
+                await videosScroller.init();
 
             } catch (error) {
                 console.error('❌ Error loading resources:', error);
@@ -2229,31 +2253,6 @@
             if (container) {
                 container.scrollTop = 0;
             }
-
-            // Trigger loading for the active tab if needed
-            setTimeout(() => {
-                const activeContainer = document.querySelector(`#${tabName} .content-grid`);
-                if (activeContainer && activeContainer.children.length === 0) {
-                    // If the active tab has no content, trigger loading
-                    switch(tabName) {
-                        case 'books':
-                            if (window.booksScroller && window.booksScroller.currentPage === 0) {
-                                window.booksScroller.loadNextPage();
-                            }
-                            break;
-                        case 'audio':
-                            if (window.audioScroller && window.audioScroller.currentPage === 0) {
-                                window.audioScroller.loadNextPage();
-                            }
-                            break;
-                        case 'videos':
-                            if (window.videosScroller && window.videosScroller.currentPage === 0) {
-                                window.videosScroller.loadNextPage();
-                            }
-                            break;
-                    }
-                }
-            }, 100);
         }
         // Clean up when page becomes hidden
         document.addEventListener('visibilitychange', () => {
