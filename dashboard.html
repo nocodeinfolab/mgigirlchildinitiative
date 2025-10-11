@@ -1273,11 +1273,26 @@
         
             async init() {
                 this._createSentinel();
-                this._setupObserver();
+
+                // If the container is visible right now, set up the observer immediately.
+                if (this.container.offsetParent !== null) {
+                    this._setupObserver();
+                } else {
+                    // Otherwise wait until it becomes visible
+                    const mo = new MutationObserver((mutations, obs) => {
+                        if (this.container.offsetParent !== null) {
+                            this._setupObserver();
+                            obs.disconnect();
+                        }
+                    });
+                    mo.observe(document.body, { attributes: true, subtree: true, childList: true });
+                }
+
                 // initial load (page 1)
                 await this.loadNextPage();
                 this._setupTopScrollHandler();
             }
+
         
             _createSentinel() {
                 if (this.sentinel) return;
