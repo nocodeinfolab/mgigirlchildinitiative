@@ -1285,18 +1285,25 @@
         
             _setupObserver() {
                 if (!this.sentinel) return;
+                
+                // Use document as root if container doesn't have its own scroll
+                const useDocumentRoot = !this.root || this.root === document.querySelector('.container');
+                
                 const options = {
-                    root: this.root, // root is your .container element so intersection is relative to that scroll region
+                    root: useDocumentRoot ? null : this.root,
                     rootMargin: '600px 0px 600px 0px', // prefetch earlier
                     threshold: 0
                 };
+                
                 this.io = new IntersectionObserver(entries => {
                     entries.forEach(entry => {
                         if (entry.isIntersecting) {
+                            console.log(`🎯 Sentinel for ${this.type} is intersecting, loading next page`);
                             this.loadNextPage();
                         }
                     });
                 }, options);
+                
                 this.io.observe(this.sentinel);
             }
         
@@ -1430,23 +1437,20 @@
 
         
         // Updated loadResources function
+                
         async function loadResources() {
             const booksContainer = document.querySelector('#books .content-grid');
             const audioContainer = document.querySelector('#audio .content-grid');
+            const videosContainer = document.querySelector('#videos .content-grid');
             const featuredContainer = document.querySelector('.featured-grid');
-        
+
             // Clear existing placeholder cards
             booksContainer.innerHTML = '';
             audioContainer.innerHTML = '';
+            videosContainer.innerHTML = '';
             featuredContainer.innerHTML = '';
-        
+
             try {
-                // Reset pagination states
-                currentBookPage = 1;
-                currentAudioPage = 1;
-                hasMoreBooks = true;
-                hasMoreAudio = true;
-        
                 // Load featured resources (limited to 3)
                 const featuredResponse = await fetch('https://mgi-login-worker.stevechikeabia.workers.dev/get_resources?featured=true&limit=3');
                 if (!featuredResponse.ok) throw new Error('Failed to fetch featured resources');
@@ -1461,43 +1465,40 @@
                 } else {
                     featuredContainer.innerHTML = '<p>No featured resources available this week.</p>';
                 }
-        
-                // Replace the calls to loadBookPage(1), loadAudioPage(1), loadVideoPage(1)
-                // with scroller initialization (put this where you currently call loadResources() or at the end of loadResources())
-                
-                const booksScroller = new ResourceScroller({
-                  containerSelector: '#books .content-grid',
-                  type: 'Book',
-                  pageSize: resourcesPerPage,
-                  createCardFn: createBookCard,
-                  rootSelector: '.container',
-                  maxPages: 5
-                });
-                
-                const audioScroller = new ResourceScroller({
-                  containerSelector: '#audio .content-grid',
-                  type: 'Audio',
-                  pageSize: resourcesPerPage,
-                  createCardFn: createAudioCard,
-                  rootSelector: '.container',
-                  maxPages: 4
-                });
-                
-                const videosScroller = new ResourceScroller({
-                  containerSelector: '#videos .content-grid',
-                  type: 'Video',
-                  pageSize: (typeof videosPerPage !== 'undefined') ? videosPerPage : resourcesPerPage,
-                  createCardFn: createVideoCard,
-                  rootSelector: '.container',
-                  maxPages: 4
-                });
-                
-                // init all (they will auto-load first page)
-                await booksScroller.init();
-                await audioScroller.init();
-                await videosScroller.init();
 
-        
+                // Initialize scrollers but don't start loading until tab is active
+                window.booksScroller = new ResourceScroller({
+                    containerSelector: '#books .content-grid',
+                    type: 'Book',
+                    pageSize: resourcesPerPage,
+                    createCardFn: createBookCard,
+                    rootSelector: '.container',
+                    maxPages: 5
+                });
+                
+                window.audioScroller = new ResourceScroller({
+                    containerSelector: '#audio .content-grid',
+                    type: 'Audio',
+                    pageSize: resourcesPerPage,
+                    createCardFn: createAudioCard,
+                    rootSelector: '.container',
+                    maxPages: 4
+                });
+                
+                window.videosScroller = new ResourceScroller({
+                    containerSelector: '#videos .content-grid',
+                    type: 'Video',
+                    pageSize: (typeof videosPerPage !== 'undefined') ? videosPerPage : resourcesPerPage,
+                    createCardFn: createVideoCard,
+                    rootSelector: '.container',
+                    maxPages: 4
+                });
+
+                // Load first page for home tab resources immediately
+                await window.booksScroller.loadNextPage();
+                await window.audioScroller.loadNextPage();
+                await window.videosScroller.loadNextPage();
+
             } catch (error) {
                 console.error('❌ Error loading resources:', error);
                 booksContainer.innerHTML = '<p style="color:red;">Failed to load books.</p>';
@@ -2210,6 +2211,7 @@
         }
 
         // Update the switchToTab function to call cleanup
+                
         function switchToTab(tabName) {
             // Clean up media before switching tabs
             cleanupAllMedia();
@@ -2227,6 +2229,31 @@
             if (container) {
                 container.scrollTop = 0;
             }
+
+            // Trigger loading for the active tab if needed
+            setTimeout(() => {
+                const activeContainer = document.querySelector(`#${tabName} .content-grid`);
+                if (activeContainer && activeContainer.children.length === 0) {
+                    // If the active tab has no content, trigger loading
+                    switch(tabName) {
+                        case 'books':
+                            if (window.booksScroller && window.booksScroller.currentPage === 0) {
+                                window.booksScroller.loadNextPage();
+                            }
+                            break;
+                        case 'audio':
+                            if (window.audioScroller && window.audioScroller.currentPage === 0) {
+                                window.audioScroller.loadNextPage();
+                            }
+                            break;
+                        case 'videos':
+                            if (window.videosScroller && window.videosScroller.currentPage === 0) {
+                                window.videosScroller.loadNextPage();
+                            }
+                            break;
+                    }
+                }
+            }, 100);
         }
         // Clean up when page becomes hidden
         document.addEventListener('visibilitychange', () => {
