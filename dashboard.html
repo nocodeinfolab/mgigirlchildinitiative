@@ -1518,7 +1518,7 @@
                   type: 'Book',
                   pageSize: resourcesPerPage,
                   createCardFn: createBookCard,
-                  rootSelector: '.container',
+                  rootSelector: 'null',
                   maxPages: 5
                 });
 
@@ -1527,7 +1527,7 @@
                   type: 'Audio',
                   pageSize: resourcesPerPage,
                   createCardFn: createAudioCard,
-                  rootSelector: '.container',
+                  rootSelector: 'null',
                   maxPages: 4
                 });
 
@@ -1536,7 +1536,7 @@
                   type: 'Video',
                   pageSize: (typeof videosPerPage !== 'undefined') ? videosPerPage : resourcesPerPage,
                   createCardFn: createVideoCard,
-                  rootSelector: '.container',
+                  rootSelector: 'null',
                   maxPages: 4
                 });
 
