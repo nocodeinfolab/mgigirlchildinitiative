@@ -968,6 +968,20 @@
                 object-fit: contain;
             }
         }
+        /* Add this to your existing CSS */
+        .video-card.expanded {
+            height: auto !important;
+            min-height: 300px;
+        }
+
+        .video-card.expanded .video-player {
+            height: 100% !important;
+            min-height: 300px;
+        }
+
+        .video-card.expanded .video-player video {
+            border-radius: 15px !important;
+        }
 
 
     </style>
@@ -2040,10 +2054,10 @@
                 card.dataset.fileUrl = fileUrl;
                 card.dataset.resourceId = resourceId;
 
-                // --- Freeze the height ---
-                const prevHeight = card.getBoundingClientRect().height;
-                card.style.height = prevHeight + 'px';
-                card.style.transition = 'height 0.25s ease, box-shadow 0.25s ease';
+                // --- Remove height constraint and let video fill naturally ---
+                card.style.height = 'auto'; // Remove fixed height
+                card.style.minHeight = '300px'; // Ensure minimum height for video
+                card.style.transition = 'all 0.25s ease';
 
                 // --- Hide content & thumbnail ---
                 if (thumbnail) thumbnail.style.display = 'none';
@@ -2057,6 +2071,13 @@
                 card.classList.add('expanded');
                 videoContainer.innerHTML = '';
 
+                // --- Make video container fill the card ---
+                videoContainer.style.position = 'relative';
+                videoContainer.style.height = '100%'; // Fill the entire card height
+                videoContainer.style.width = '100%';
+                videoContainer.style.margin = '0'; // Remove the negative margins
+                videoContainer.style.borderRadius = '15px'; // Apply border radius to entire container
+
                 // --- Close button ---
                 const closeBtn = document.createElement('button');
                 closeBtn.className = 'video-close-btn';
@@ -2068,12 +2089,17 @@
                 });
                 videoContainer.appendChild(closeBtn);
 
-                // --- Video setup ---
+                // --- Video setup - make it fill the container ---
                 const video = document.createElement('video');
                 video.controls = true;
                 video.autoplay = true;
                 video.playsInline = true;
-                video.preload = 'metadata'; // Only load metadata initially
+                video.preload = 'metadata';
+                video.style.width = '100%';
+                video.style.height = '100%';
+                video.style.objectFit = 'cover'; // Ensure video fills the space
+                video.style.borderRadius = '15px'; // Match container border radius
+                
                 video.innerHTML = `<source src="${fileUrl}" type="video/mp4">Your browser does not support the video tag.`;
                 videoContainer.appendChild(video);
                 card._currentVideo = video;
@@ -2130,14 +2156,27 @@
                 videoContainer.removeChild(closeBtn);
             }
 
+            // --- Reset video container styles ---
+            videoContainer.style.height = ''; // Reset to original
+            videoContainer.style.width = '';
+            videoContainer.style.margin = ''; // Restore original margins
+            videoContainer.style.borderRadius = '';
+            videoContainer.style.position = '';
+
             // --- Restore thumbnail and reattach click handler ---
             const fileUrl = card.dataset.fileUrl;
             const resourceId = card.dataset.resourceId;
             videoContainer.innerHTML = `<div class="video-thumbnail"></div>`;
             const thumbnail = videoContainer.querySelector('.video-thumbnail');
             if (thumbnail) {
+                thumbnail.style.display = ''; // Reset display
                 thumbnail.addEventListener('click', () => loadVideoOnClick(card, fileUrl, resourceId));
             }
+
+            // --- Reset card styles ---
+            card.style.height = ''; // Remove fixed height
+            card.style.minHeight = ''; // Remove min height
+            card.style.transition = '';
 
             // --- Restore text content ---
             if (content) {
@@ -2150,7 +2189,6 @@
 
             // --- Reset card state ---
             card.classList.remove('expanded');
-            card.style.height = '';
         }
     
         // Keep expanded card heights reasonable if the window is resized while expanded
