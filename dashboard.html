@@ -3388,20 +3388,7 @@
                         }
                     }
 
-                    // Add replay button
-                    const replayBtn = document.createElement('button');
-                    replayBtn.textContent = 'Replay Lesson';
-                    replayBtn.style.cssText = `
-                        display: block; margin: 10px auto; background: var(--primary); 
-                        color: white; border: none; padding: 8px 16px; border-radius: 5px; 
-                        cursor: pointer; font-weight: bold;
-                    `;
-                    replayBtn.addEventListener('click', () => {
-                        video.currentTime = 0;
-                        video.play();
-                        replayBtn.remove();
-                    });
-                    content.prepend(replayBtn);
+                    
                 });
 
             } else if (fileUrl.endsWith('.pdf')) {
