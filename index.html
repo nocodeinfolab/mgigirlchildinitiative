@@ -310,6 +310,32 @@
             right: 0;
         }
 
+        /* Date of Birth Custom Styles */
+        .dob-container {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .dob-select {
+            flex: 1;
+        }
+
+        .dob-select select {
+            width: 100%;
+            padding: 0.9rem;
+            border: 2px solid var(--light-purple);
+            border-radius: 10px;
+            font-size: 1rem;
+            background: var(--light-pink);
+            cursor: pointer;
+        }
+
+        .dob-select select:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: white;
+        }
+
         /* Modal Styles */
         .modal-overlay {
             position: fixed;
@@ -397,26 +423,6 @@
             border: 1px solid #ef5350;
         }
 
-        /* Date of Birth styling for better usability */
-        #dob {
-            cursor: pointer;
-        }
-
-        /* Style for the date picker dropdowns */
-        #dob::-webkit-calendar-picker-indicator {
-            cursor: pointer;
-            padding: 5px;
-            border-radius: 5px;
-        }
-
-        #dob::-webkit-datetime-edit-fields-wrapper {
-            padding: 0;
-        }
-
-        #dob::-webkit-datetime-edit {
-            padding: 0;
-        }
-
         @media (max-width: 768px) {
             body {
                 padding: 1rem;
@@ -447,6 +453,11 @@
             .modal {
                 padding: 1.5rem;
                 margin: 1rem;
+            }
+
+            .dob-container {
+                flex-direction: column;
+                gap: 0.8rem;
             }
         }
         .logo {
@@ -542,22 +553,51 @@
                         </div>
                     </div>
 
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="dob">Date of Birth</label>
-                            <input type="date" id="dob" name="dateOfBirth" required>
+                    <div class="form-group">
+                        <label for="dob">Date of Birth</label>
+                        <div class="dob-container">
+                            <div class="dob-select">
+                                <select id="dob-month" name="dobMonth" required>
+                                    <option value="">Month</option>
+                                    <option value="01">January</option>
+                                    <option value="02">February</option>
+                                    <option value="03">March</option>
+                                    <option value="04">April</option>
+                                    <option value="05">May</option>
+                                    <option value="06">June</option>
+                                    <option value="07">July</option>
+                                    <option value="08">August</option>
+                                    <option value="09">September</option>
+                                    <option value="10">October</option>
+                                    <option value="11">November</option>
+                                    <option value="12">December</option>
+                                </select>
+                            </div>
+                            <div class="dob-select">
+                                <select id="dob-day" name="dobDay" required>
+                                    <option value="">Day</option>
+                                    <!-- Days will be populated by JavaScript -->
+                                </select>
+                            </div>
+                            <div class="dob-select">
+                                <select id="dob-year" name="dobYear" required>
+                                    <option value="">Year</option>
+                                    <!-- Years will be populated by JavaScript -->
+                                </select>
+                            </div>
                         </div>
+                        <input type="hidden" id="dob" name="dateOfBirth">
+                    </div>
 
-                        <div class="form-group">
-                            <label for="sex">Sex</label>
-                            <select id="sex" name="sex" required>
-                                <option value="">Select Sex</option>
-                                <option value="Male">Male</option>
-                                <option value="Female">Female</option>
-                                <option value="Other">Other</option>
-                                <option value="Prefer not to say">Prefer not to say</option>
-                            </select>
-                        </div>
+                    <div class="form-group">
+                        <label for="sex">Sex</label>
+                        <select id="sex" name="sex" required>
+                            <option value="">Select Sex</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                            <option value="Prefer not to say">Prefer not to say</option>
+                        </select>
                     </div>
 
                     <div class="form-group">
@@ -774,6 +814,80 @@
             }
         });
 
+        // Date of Birth functionality
+        function initializeDateOfBirth() {
+            const yearSelect = document.getElementById('dob-year');
+            const monthSelect = document.getElementById('dob-month');
+            const daySelect = document.getElementById('dob-day');
+            const dobHidden = document.getElementById('dob');
+
+            // Populate years (from 1900 to current year)
+            const currentYear = new Date().getFullYear();
+            for (let year = currentYear; year >= 1900; year--) {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                yearSelect.appendChild(option);
+            }
+
+            // Set default year to 18 years ago
+            const defaultYear = currentYear - 18;
+            yearSelect.value = defaultYear;
+
+            // Populate days based on selected month and year
+            function updateDays() {
+                const selectedMonth = monthSelect.value;
+                const selectedYear = yearSelect.value;
+                
+                // Clear existing days
+                daySelect.innerHTML = '<option value="">Day</option>';
+                
+                if (selectedMonth && selectedYear) {
+                    const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
+                    
+                    for (let day = 1; day <= daysInMonth; day++) {
+                        const option = document.createElement('option');
+                        option.value = day.toString().padStart(2, '0');
+                        option.textContent = day;
+                        daySelect.appendChild(option);
+                    }
+                    
+                    // Set default day to 1
+                    daySelect.value = '01';
+                }
+            }
+
+            // Update date hidden field
+            function updateHiddenDate() {
+                const year = yearSelect.value;
+                const month = monthSelect.value;
+                const day = daySelect.value;
+                
+                if (year && month && day) {
+                    dobHidden.value = `${year}-${month}-${day}`;
+                } else {
+                    dobHidden.value = '';
+                }
+            }
+
+            // Set default month to January and update days
+            monthSelect.value = '01';
+            updateDays();
+
+            // Add event listeners
+            yearSelect.addEventListener('change', function() {
+                updateDays();
+                updateHiddenDate();
+            });
+
+            monthSelect.addEventListener('change', function() {
+                updateDays();
+                updateHiddenDate();
+            });
+
+            daySelect.addEventListener('change', updateHiddenDate);
+        }
+
         // Signup form submission
         const signupForm = document.getElementById('signupForm');
         const signupBtn = document.getElementById('signup-btn');
@@ -781,12 +895,18 @@
         signupForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
+            const dobHidden = document.getElementById('dob');
+            if (!dobHidden.value) {
+                showMessage('Please select a valid date of birth.', 'error');
+                return;
+            }
+
             const formData = {
                 firstName: document.getElementById('first-name').value,
                 lastName: document.getElementById('last-name').value,
                 email: document.getElementById('signup-email').value,
                 password: document.getElementById('signup-password').value,
-                dateOfBirth: document.getElementById('dob').value,
+                dateOfBirth: dobHidden.value,
                 sex: document.getElementById('sex').value,
                 city: document.getElementById('city').value
             };
@@ -817,6 +937,8 @@
                     setTimeout(() => {
                         document.querySelector('[data-tab="login"]').click();
                         signupForm.reset();
+                        // Reset date of birth
+                        initializeDateOfBirth();
                     }, 2000);
                 } else {
                     showMessage(data.message || 'Signup failed. Please try again.', 'error');
@@ -830,16 +952,9 @@
             }
         });
 
-        // Set max date for date of birth to today
+        // Initialize date of birth when page loads
         document.addEventListener('DOMContentLoaded', function() {
-            const dobInput = document.getElementById('dob');
-            const today = new Date().toISOString().split('T')[0];
-            dobInput.max = today;
-            
-            // Set a default value that makes sense (e.g., 18 years ago)
-            const defaultDate = new Date();
-            defaultDate.setFullYear(defaultDate.getFullYear() - 18);
-            dobInput.value = defaultDate.toISOString().split('T')[0];
+            initializeDateOfBirth();
         });
 
         window.addEventListener('load', () => {
