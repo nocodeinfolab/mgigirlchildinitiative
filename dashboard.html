@@ -1396,11 +1396,11 @@
         }
         @media (max-width: 768px) {
           .lesson-modal-body {
-            display: flex;
-            flex-direction: column;
-            max-height: 80vh;
-            overflow-y: auto;
+            display: flex;             /* <-- Use flex for column stacking */
+            flex-direction: column;    /* <-- Stack children vertically */
             gap: 10px;
+            /* max-height: 80vh; */    /* Optional: set body height if needed */
+            padding: 1rem;
           }
           .lesson-modal-body video {
             max-height: 35vh;
@@ -1409,8 +1409,13 @@
             border-radius: 8px;
           }
           .lessons-list-container {
-            flex: 1 1 auto;
-            min-height: 0;
+            flex: 1 1 auto;            
+            min-height: 0;             /* <-- Ensures flexbox child can shrink */
+            overflow-y: auto;          /* <-- Scroll only in lessons list */
+            margin-top: 10px;          /* Optional: space above lessons */
+          }
+          .lessons-list-compact {
+            max-height: 30vh;          /* Or remove if you want container to control height */
             overflow-y: auto;
           }
         }
