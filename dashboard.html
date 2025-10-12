@@ -1112,30 +1112,40 @@
             grid-column: 1 / -1;
         }
         /* Enhanced Lesson Modal Styles */
+        
         .lesson-navigation {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
-            padding: 15px;
+            margin: 15px 0;
+            padding: 10px 15px;
             background: var(--light-pink);
-            border-radius: 10px;
+            border-radius: 8px;
+            order: 2; /* Move navigation below content */
         }
 
         .lesson-nav-btn {
             background: var(--primary);
             color: white;
             border: none;
-            padding: 10px 15px;
-            border-radius: 5px;
+            padding: 6px 12px;
+            border-radius: 4px;
             cursor: pointer;
             font-weight: bold;
-            min-height: 44px;
+            font-size: 0.85rem;
+            min-height: 36px;
+            transition: all 0.2s ease;
+        }
+
+        .lesson-nav-btn:hover:not(:disabled) {
+            background: var(--secondary);
+            transform: translateY(-1px);
         }
 
         .lesson-nav-btn:disabled {
             background: #ccc;
             cursor: not-allowed;
+            transform: none;
         }
 
         .lesson-progress {
@@ -1144,17 +1154,19 @@
             gap: 5px;
             font-weight: bold;
             color: var(--text-dark);
+            font-size: 0.9rem;
         }
 
         #currentLessonNumber {
             color: var(--primary);
-            font-size: 1.2rem;
+            font-size: 1rem;
         }
 
         .lessons-list-container {
-            margin-top: 25px;
+            margin-top: 20px;
             border-top: 2px solid var(--light-purple);
             padding-top: 15px;
+            order: 3; /* Keep lessons list at bottom */
         }
 
         .lessons-list-compact {
@@ -1168,12 +1180,13 @@
         .lesson-list-item {
             display: flex;
             align-items: center;
-            padding: 10px;
-            margin-bottom: 5px;
+            padding: 8px;
+            margin-bottom: 4px;
             border-radius: 5px;
             cursor: pointer;
             transition: all 0.3s;
-            gap: 10px;
+            gap: 8px;
+            font-size: 0.9rem;
         }
 
         .lesson-list-item:hover {
@@ -1187,33 +1200,73 @@
 
         .lesson-number {
             font-weight: bold;
-            min-width: 25px;
+            min-width: 22px;
         }
 
         .lesson-name {
             flex: 1;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
         }
 
         .current-badge {
             background: rgba(255,255,255,0.2);
-            padding: 2px 8px;
-            border-radius: 10px;
-            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-size: 0.65rem;
         }
 
-        /* Responsive */
+        /* Fix modal body layout */
+        .lesson-modal-body {
+            padding: 1.5rem;
+            background: #fafafa;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        #lessonContent {
+            order: 1; /* Content comes first */
+            min-height: 300px;
+        }
+
+        /* Ensure video fills available space properly */
+        .lesson-modal-body video {
+            width: 100%;
+            max-height: 60vh;
+            border-radius: 8px;
+            background: #000;
+        }
+
+        .lesson-modal-body iframe {
+            width: 100%;
+            height: 60vh;
+            border: none;
+            border-radius: 8px;
+        }
+
+        /* Responsive improvements */
         @media (max-width: 768px) {
             .lesson-navigation {
-                flex-direction: column;
-                gap: 10px;
+                flex-direction: row;
+                gap: 8px;
+                padding: 8px 12px;
             }
             
             .lesson-nav-btn {
-                width: 100%;
+                font-size: 0.8rem;
+                padding: 5px 10px;
+                min-height: 32px;
+            }
+            
+            .lesson-progress {
+                font-size: 0.8rem;
+            }
+            
+            .lesson-modal-body {
+                padding: 1rem;
             }
         }
-
 
     </style>
 </head>
@@ -3060,6 +3113,7 @@
                             <button id="closeLessonModal">&times;</button>
                         </div>
                         <div class="lesson-modal-body">
+                            <div id="lessonContent"></div>
                             <div class="lesson-navigation">
                                 <button id="prevLesson" class="lesson-nav-btn">← Previous</button>
                                 <div class="lesson-progress">
@@ -3069,9 +3123,8 @@
                                 </div>
                                 <button id="nextLesson" class="lesson-nav-btn">Next →</button>
                             </div>
-                            <div id="lessonContent"></div>
                             <div class="lessons-list-container">
-                                <h3 style="margin: 20px 0 10px 0; color: #333;">All Lessons</h3>
+                                <h3 style="margin: 10px 0; color: #333; font-size: 1rem;">All Lessons</h3>
                                 <div id="lessonsList" class="lessons-list-compact"></div>
                             </div>
                         </div>
@@ -3079,12 +3132,20 @@
                 `;
                 document.body.appendChild(modal);
 
+                // Event handlers - use proper function references
                 modal.querySelector('#closeLessonModal').addEventListener('click', closeLessonModal);
                 modal.querySelector('.lesson-modal-overlay').addEventListener('click', closeLessonModal);
                 
-                // Lesson navigation events
-                modal.querySelector('#prevLesson').addEventListener('click', navigateToPreviousLesson);
-                modal.querySelector('#nextLesson').addEventListener('click', navigateToNextLesson);
+                // Lesson navigation events - fix the reference issue
+                modal.querySelector('#prevLesson').addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    navigateToPreviousLesson();
+                });
+                
+                modal.querySelector('#nextLesson').addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    navigateToNextLesson();
+                });
             }
 
             // Store current course data globally for navigation
@@ -3121,7 +3182,8 @@
                 video.controls = true;
                 video.autoplay = true;
                 video.style.width = '100%';
-                video.style.borderRadius = '12px';
+                video.style.maxHeight = '60vh';
+                video.style.borderRadius = '8px';
                 videoContainer.appendChild(video);
                 content.appendChild(videoContainer);
 
