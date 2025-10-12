@@ -3173,17 +3173,9 @@
                 totalLessons: totalLessons
             };
 
-            // Update modal content
-            document.getElementById('lessonModalTitle').textContent = courseName;
-            document.getElementById('lessonModalSubtitle').textContent = `Lesson ${lessonIndex + 1} of ${totalLessons}: ${lessonTitle}`;
-            document.getElementById('currentLessonNumber').textContent = lessonIndex + 1;
-            document.getElementById('totalLessons').textContent = totalLessons;
+            
 
-            // Update navigation buttons
-            const prevBtn = document.getElementById('prevLesson');
-            const nextBtn = document.getElementById('nextLesson');
-            prevBtn.disabled = lessonIndex === 0;
-            nextBtn.disabled = lessonIndex === totalLessons - 1;
+            
 
             const content = document.getElementById('lessonContent');
             content.innerHTML = '';
