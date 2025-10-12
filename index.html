@@ -658,10 +658,7 @@
                     showModalMessage('If your email is registered with us, you\'ll receive a message shortly with a link to reset your password.', 'success');
                     forgotPasswordForm.reset();
                     
-                    // Close modal after 3 seconds
-                    setTimeout(() => {
-                        forgotPasswordModal.classList.remove('active');
-                    }, 3000);
+                    
                 } else {
                     showModalMessage(data.error || 'Something went wrong. Please try again.', 'error');
                 }
@@ -777,8 +774,7 @@
             }
         });
 
-        // Demo: Remove this in production
-        // This simulates the API response for testing
+        
         window.addEventListener('load', () => {
             console.log('Auth page loaded. Replace API endpoints with your Cloudflare Workers URLs.');
         });
