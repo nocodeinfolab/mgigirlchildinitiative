@@ -4230,11 +4230,6 @@
             if (correct === total) {
                 status.innerHTML = '<div style="color: green; font-weight: bold;">🎉 Congratulations! You solved the puzzle!</div>';
                 
-                // Track completion
-                const userRowId = localStorage.getItem('userRowId');
-                if (userRowId) {
-                    updateGameProgress(userRowId, 'crossword');
-                }
             } else {
                 status.innerHTML = `<div>You got ${correct} out of ${total} letters correct. Keep trying!</div>`;
             }
