@@ -3312,12 +3312,14 @@
         }
         
         // Direct audio opening (fallback when not in current view)
+                
         function openAudioDirectly(resource) {
             const fileUrl = Array.isArray(resource.file) && resource.file.length > 0 ? resource.file[0].url : '';
             const title = resource.topic || 'Untitled Audio';
             
             // Create a floating audio player
             const audioPlayer = document.createElement('div');
+            audioPlayer.id = 'floatingAudioPlayer'; // Add ID for easy reference
             audioPlayer.style.cssText = `
                 position: fixed; bottom: 20px; right: 20px; background: white;
                 padding: 1.5rem; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
@@ -3348,8 +3350,7 @@
                             <span id="directAudioDuration">0:00</span>
                         </div>
                     </div>
-                    <button onclick="this.parentElement.parentElement.parentElement.remove()" 
-                            style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #666;">
+                    <button id="closeFloatingAudio" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #666;">
                         ×
                     </button>
                 </div>
@@ -3365,8 +3366,25 @@
             const progressBar = document.getElementById('directAudioProgress');
             const currentTime = document.getElementById('directAudioCurrent');
             const duration = document.getElementById('directAudioDuration');
+            const closeBtn = document.getElementById('closeFloatingAudio');
             
             let progressTracked = false;
+            
+            // Safe close function
+            function closeAudioPlayer() {
+                if (audioPlayer && audioPlayer.parentNode) {
+                    // Stop audio first
+                    if (audio) {
+                        audio.pause();
+                        audio.currentTime = 0;
+                    }
+                    // Remove only the audio player
+                    audioPlayer.remove();
+                }
+            }
+            
+            // Close button event
+            closeBtn.addEventListener('click', closeAudioPlayer);
             
             audio.onloadedmetadata = function() {
                 duration.textContent = formatTime(audio.duration);
@@ -3399,6 +3417,27 @@
                     this.textContent = '▶';
                 }
             });
+            
+            // Also close if clicking outside (optional)
+            setTimeout(() => {
+                const overlayClickHandler = (e) => {
+                    if (!audioPlayer.contains(e.target) && e.target !== playBtn) {
+                        // Don't close if clicking on other interactive elements
+                        const interactiveSelectors = ['.nav-tab', '.card', '.video-card', '.audio-card', '.book-card', '.course-card', '.search-input', '.search-btn'];
+                        const isInteractive = interactiveSelectors.some(selector => e.target.closest(selector));
+                        
+                        if (!isInteractive) {
+                            closeAudioPlayer();
+                            document.removeEventListener('click', overlayClickHandler);
+                        }
+                    }
+                };
+                
+                // Add slight delay before enabling outside click to avoid immediate close
+                setTimeout(() => {
+                    document.addEventListener('click', overlayClickHandler);
+                }, 100);
+            }, 100);
         }
         
         function openCourseFromSearch(course) {
