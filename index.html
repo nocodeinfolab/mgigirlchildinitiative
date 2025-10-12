@@ -155,7 +155,7 @@
             font-size: 0.9rem;
         }
 
-        input {
+        input, select {
             width: 100%;
             padding: 0.9rem;
             border: 2px solid var(--light-purple);
@@ -165,7 +165,7 @@
             background: var(--light-pink);
         }
 
-        input:focus {
+        input:focus, select:focus {
             outline: none;
             border-color: var(--primary);
             background: white;
@@ -397,6 +397,26 @@
             border: 1px solid #ef5350;
         }
 
+        /* Date of Birth styling for better usability */
+        #dob {
+            cursor: pointer;
+        }
+
+        /* Style for the date picker dropdowns */
+        #dob::-webkit-calendar-picker-indicator {
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 5px;
+        }
+
+        #dob::-webkit-datetime-edit-fields-wrapper {
+            padding: 0;
+        }
+
+        #dob::-webkit-datetime-edit {
+            padding: 0;
+        }
+
         @media (max-width: 768px) {
             body {
                 padding: 1rem;
@@ -522,9 +542,22 @@
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="dob">Date of Birth</label>
-                        <input type="date" id="dob" name="dateOfBirth" required>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="dob">Date of Birth</label>
+                            <input type="date" id="dob" name="dateOfBirth" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="sex">Sex</label>
+                            <select id="sex" name="sex" required>
+                                <option value="">Select Sex</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                                <option value="Other">Other</option>
+                                <option value="Prefer not to say">Prefer not to say</option>
+                            </select>
+                        </div>
                     </div>
 
                     <div class="form-group">
@@ -754,6 +787,7 @@
                 email: document.getElementById('signup-email').value,
                 password: document.getElementById('signup-password').value,
                 dateOfBirth: document.getElementById('dob').value,
+                sex: document.getElementById('sex').value,
                 city: document.getElementById('city').value
             };
 
@@ -796,7 +830,18 @@
             }
         });
 
-        
+        // Set max date for date of birth to today
+        document.addEventListener('DOMContentLoaded', function() {
+            const dobInput = document.getElementById('dob');
+            const today = new Date().toISOString().split('T')[0];
+            dobInput.max = today;
+            
+            // Set a default value that makes sense (e.g., 18 years ago)
+            const defaultDate = new Date();
+            defaultDate.setFullYear(defaultDate.getFullYear() - 18);
+            dobInput.value = defaultDate.toISOString().split('T')[0];
+        });
+
         window.addEventListener('load', () => {
             console.log('Auth page loaded. Replace API endpoints with your Cloudflare Workers URLs.');
         });
