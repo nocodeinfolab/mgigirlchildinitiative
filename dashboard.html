@@ -3066,11 +3066,16 @@
             }
         }
         // ===== SEARCH FUNCTIONALITY =====
+        // ===== ENHANCED SEARCH FUNCTIONALITY =====
         const searchInput = document.getElementById('searchInput');
         const searchBtn = document.getElementById('searchBtn');
         const searchResults = document.getElementById('searchResults');
         const searchResultsGrid = document.getElementById('searchResultsGrid');
         const clearSearch = document.getElementById('clearSearch');
+        
+        // Global cache for quick resource lookup
+        let resourceCache = new Map(); // resourceId -> resource data
+        let courseCache = new Map();   // courseId -> course data
         
         // Event listeners
         searchBtn.addEventListener('click', performSearch);
@@ -3095,11 +3100,29 @@
                 if (!response.ok) throw new Error('Search failed');
                 
                 const data = await response.json();
+                
+                // Cache the search results for quick access later
+                cacheSearchResults(data.results);
                 displaySearchResults(data);
+                
             } catch (error) {
                 console.error('Search error:', error);
                 searchResultsGrid.innerHTML = '<div class="no-results">Failed to load search results. Please try again.</div>';
             }
+        }
+        
+        function cacheSearchResults(results) {
+            // Cache resources
+            results.resources.forEach(resource => {
+                const resourceId = resource.resourceId || resource.id;
+                resourceCache.set(resourceId, resource);
+            });
+            
+            // Cache courses
+            results.courses.forEach(course => {
+                const courseId = course['Course ID'] || course.id;
+                courseCache.set(courseId, course);
+            });
         }
         
         function displaySearchResults(data) {
@@ -3168,58 +3191,214 @@
             const fileUrl = Array.isArray(resource.file) && resource.file.length > 0 ? resource.file[0].url : '';
             const title = resource.topic || 'Untitled';
         
-            // For now, use simple approach - switch to tab and hope it's there
-            // We'll enhance this in the next step
             switch(resourceType) {
                 case 'video':
                     switchToTab('videos');
-                    setTimeout(() => {
-                        const videoCard = document.querySelector(`.video-card[data-resource-id="${resourceId}"]`);
-                        if (videoCard) {
-                            videoCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                            const thumbnail = videoCard.querySelector('.video-thumbnail');
-                            if (thumbnail) setTimeout(() => thumbnail.click(), 500);
-                        } else {
-                            // Fallback: show message
-                            alert('Video not found in current view. Please browse to the Videos tab and find it manually.');
-                        }
-                    }, 300);
+                    setTimeout(() => openVideoSmart(resourceId, resource), 300);
                     break;
         
                 case 'audio':
                     switchToTab('audio');
-                    setTimeout(() => {
-                        const audioCard = document.querySelector(`.audio-card[data-resource-id="${resourceId}"]`);
-                        if (audioCard) {
-                            audioCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                            const playBtn = audioCard.querySelector('.play-pause-btn');
-                            if (playBtn) setTimeout(() => playBtn.click(), 500);
-                        } else {
-                            alert('Audio not found in current view. Please browse to the Audio tab and find it manually.');
-                        }
-                    }, 300);
+                    setTimeout(() => openAudioSmart(resourceId, resource), 300);
                     break;
         
                 case 'book':
                     switchToTab('books');
-                    setTimeout(() => {
-                        const bookCard = document.querySelector(`.book-card[data-resource-id="${resourceId}"]`);
-                        if (bookCard) {
-                            bookCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                            setTimeout(() => bookCard.click(), 500);
-                        } else {
-                            // For books, we can still open directly since we have the file URL
-                            openBookReaderWithFallback(title, fileUrl, resourceId);
-                        }
-                    }, 300);
+                    setTimeout(() => openBookSmart(resourceId, resource), 300);
                     break;
         
                 default:
                     switchToTab('books');
-                    setTimeout(() => {
-                        openBookReaderWithFallback(title, fileUrl, resourceId);
-                    }, 300);
+                    setTimeout(() => openBookSmart(resourceId, resource), 300);
             }
+        }
+        
+        // Smart video opening - tries current view first, then opens directly
+        async function openVideoSmart(resourceId, resource) {
+            // First try to find in current view
+            const videoCard = document.querySelector(`.video-card[data-resource-id="${resourceId}"]`);
+            if (videoCard) {
+                videoCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                const thumbnail = videoCard.querySelector('.video-thumbnail');
+                if (thumbnail) {
+                    setTimeout(() => thumbnail.click(), 500);
+                    return;
+                }
+            }
+            
+            // If not found in current view, open directly
+            console.log('Video not in current view, opening directly...');
+            openVideoDirectly(resource);
+        }
+        
+        // Smart audio opening
+        async function openAudioSmart(resourceId, resource) {
+            const audioCard = document.querySelector(`.audio-card[data-resource-id="${resourceId}"]`);
+            if (audioCard) {
+                audioCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                const playBtn = audioCard.querySelector('.play-pause-btn');
+                if (playBtn) {
+                    setTimeout(() => playBtn.click(), 500);
+                    return;
+                }
+            }
+            
+            // If not found, open directly
+            console.log('Audio not in current view, opening directly...');
+            openAudioDirectly(resource);
+        }
+        
+        // Smart book opening
+        async function openBookSmart(resourceId, resource) {
+            const bookCard = document.querySelector(`.book-card[data-resource-id="${resourceId}"]`);
+            if (bookCard) {
+                bookCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setTimeout(() => bookCard.click(), 500);
+            } else {
+                // For books, we can always open directly
+                const fileUrl = Array.isArray(resource.file) && resource.file.length > 0 ? resource.file[0].url : '';
+                const title = resource.topic || 'Untitled';
+                openBookReaderWithFallback(title, fileUrl, resourceId);
+            }
+        }
+        
+        // Direct video opening (fallback when not in current view)
+        function openVideoDirectly(resource) {
+            const fileUrl = Array.isArray(resource.file) && resource.file.length > 0 ? resource.file[0].url : '';
+            const title = resource.topic || 'Untitled Video';
+            
+            // Create a temporary modal for video playback
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                background: rgba(0,0,0,0.95); z-index: 10000; display: flex;
+                justify-content: center; align-items: center; padding: 20px;
+            `;
+            
+            modal.innerHTML = `
+                <div style="position: relative; width: 100%; max-width: 900px;">
+                    <button onclick="this.parentElement.parentElement.remove()" 
+                            style="position: absolute; top: -50px; right: 0; background: #E91E63; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; z-index: 10001;">
+                        ✕ Close
+                    </button>
+                    <video controls autoplay style="width: 100%; border-radius: 10px; max-height: 80vh;">
+                        <source src="${fileUrl}" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>
+                    <div style="color: white; text-align: center; margin-top: 15px; font-size: 1.1rem;">${title}</div>
+                </div>
+            `;
+            
+            // Add progress tracking to direct video
+            const video = modal.querySelector('video');
+            video.onloadedmetadata = function() {
+                let progressTracked = false;
+                video.ontimeupdate = function() {
+                    if (video.duration && (video.currentTime / video.duration) >= 0.8 && !progressTracked) {
+                        progressTracked = true;
+                        updateVideoProgress(resource.resourceId || resource.id);
+                    }
+                };
+            };
+            
+            document.body.appendChild(modal);
+            
+            // Close modal when clicking outside video
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            });
+        }
+        
+        // Direct audio opening (fallback when not in current view)
+        function openAudioDirectly(resource) {
+            const fileUrl = Array.isArray(resource.file) && resource.file.length > 0 ? resource.file[0].url : '';
+            const title = resource.topic || 'Untitled Audio';
+            
+            // Create a floating audio player
+            const audioPlayer = document.createElement('div');
+            audioPlayer.style.cssText = `
+                position: fixed; bottom: 20px; right: 20px; background: white;
+                padding: 1.5rem; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+                z-index: 10000; min-width: 350px; border-left: 5px solid var(--primary);
+            `;
+            
+            audioPlayer.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                    <div style="background: var(--primary); color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                        🎵
+                    </div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: bold; font-size: 1.1rem;">${title}</div>
+                        <div style="color: #666; font-size: 0.9rem;">Now Playing</div>
+                    </div>
+                </div>
+                
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <button id="directAudioPlay" style="background: var(--primary); color: white; border: none; border-radius: 50%; width: 50px; height: 50px; font-size: 1.2rem; cursor: pointer;">
+                        ▶
+                    </button>
+                    <div style="flex: 1;">
+                        <div style="background: #eee; height: 6px; border-radius: 3px; overflow: hidden;">
+                            <div id="directAudioProgress" style="background: var(--primary); height: 100%; width: 0%; transition: width 0.1s;"></div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: #666; margin-top: 5px;">
+                            <span id="directAudioCurrent">0:00</span>
+                            <span id="directAudioDuration">0:00</span>
+                        </div>
+                    </div>
+                    <button onclick="this.parentElement.parentElement.parentElement.remove()" 
+                            style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #666;">
+                        ×
+                    </button>
+                </div>
+                
+                <audio id="directAudioElement" src="${fileUrl}" preload="metadata" style="display: none;"></audio>
+            `;
+            
+            document.body.appendChild(audioPlayer);
+            
+            // Setup audio controls
+            const audio = document.getElementById('directAudioElement');
+            const playBtn = document.getElementById('directAudioPlay');
+            const progressBar = document.getElementById('directAudioProgress');
+            const currentTime = document.getElementById('directAudioCurrent');
+            const duration = document.getElementById('directAudioDuration');
+            
+            let progressTracked = false;
+            
+            audio.onloadedmetadata = function() {
+                duration.textContent = formatTime(audio.duration);
+            };
+            
+            audio.ontimeupdate = function() {
+                if (audio.duration) {
+                    const progress = (audio.currentTime / audio.duration) * 100;
+                    progressBar.style.width = progress + '%';
+                    currentTime.textContent = formatTime(audio.currentTime);
+                    
+                    if (progress >= 80 && !progressTracked) {
+                        progressTracked = true;
+                        updateAudioProgress(resource.resourceId || resource.id);
+                    }
+                }
+            };
+            
+            audio.onended = function() {
+                playBtn.textContent = '▶';
+                progressBar.style.width = '100%';
+            };
+            
+            playBtn.addEventListener('click', function() {
+                if (audio.paused) {
+                    audio.play();
+                    this.textContent = '⏸';
+                } else {
+                    audio.pause();
+                    this.textContent = '▶';
+                }
+            });
         }
         
         function openCourseFromSearch(course) {
@@ -3236,9 +3415,39 @@
                     courseCard.style.boxShadow = '0 0 0 3px var(--primary), 0 10px 25px rgba(0, 0, 0, 0.15)';
                     setTimeout(() => courseCard.style.boxShadow = 'var(--shadow)', 2000);
                 } else {
-                    alert('Course not found in current view. Please browse to the Courses tab and find it manually.');
+                    // If course not found, open the first lesson directly
+                    openCourseDirectly(course);
                 }
             }, 300);
+        }
+        
+        // Direct course opening (fallback when course not in current view)
+        function openCourseDirectly(course) {
+            const courseName = course['Course Name'] || 'Untitled Course';
+            const lessons = [];
+            
+            // Extract lessons from course data
+            for (let i = 1; i <= 20; i++) {
+                const lessonField = `Lesson ${i}`;
+                if (course[lessonField] && course[lessonField].fileName && course[lessonField].fileUrl) {
+                    lessons.push(course[lessonField]);
+                }
+            }
+            
+            if (lessons.length > 0) {
+                // Open the first lesson in a modal
+                openLessonModal(courseName, course['Course ID'], lessons[0].fileName, lessons[0].fileUrl, 0, lessons.length);
+            } else {
+                alert('No lessons available for this course');
+            }
+        }
+        
+        // Helper function to format time (MM:SS)
+        function formatTime(seconds) {
+            if (isNaN(seconds)) return '0:00';
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
         }
         
         function clearSearchResults() {
