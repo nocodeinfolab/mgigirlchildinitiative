@@ -1344,12 +1344,17 @@
 
         /* Fix modal body layout */
         .lesson-modal-body {
-            padding: 1.5rem;
-            background: #fafafa;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          padding: 1.5rem;
+        }
+
+        .lessons-list-container {
+          flex: 1 1 auto;
+          min-height: 0;
+          overflow-y: auto;
+          margin-top: 10px;
         }
 
         #lessonContent {
@@ -1372,28 +1377,6 @@
             border-radius: 8px;
         }
 
-        /* Responsive improvements */
-        @media (max-width: 768px) {
-            .lesson-navigation {
-                flex-direction: row;
-                gap: 8px;
-                padding: 8px 12px;
-            }
-            
-            .lesson-nav-btn {
-                font-size: 0.8rem;
-                padding: 5px 10px;
-                min-height: 32px;
-            }
-            
-            .lesson-progress {
-                font-size: 0.8rem;
-            }
-            
-            .lesson-modal-body {
-                padding: 1rem;
-            }
-        }
         @media (max-width: 768px) { 
           .lesson-modal-body {
             display: flex;
@@ -3295,10 +3278,6 @@
                         <div class="lesson-modal-body">
                             <div id="lessonContent"></div>
                             
-                            <div class="lessons-list-container">
-                                <h3 style="margin: 10px 0; color: #333; font-size: 1rem;">All Lessons</h3>
-                                <div id="lessonsList" class="lessons-list-compact"></div>
-                            </div>
                         </div>
                     </div>
                 `;
