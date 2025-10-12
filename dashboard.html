@@ -3065,50 +3065,37 @@
                 if (body) body.innerHTML = '';
             }
         }
-        // Search functionality
+        // ===== SEARCH FUNCTIONALITY =====
         const searchInput = document.getElementById('searchInput');
         const searchBtn = document.getElementById('searchBtn');
         const searchResults = document.getElementById('searchResults');
         const searchResultsGrid = document.getElementById('searchResultsGrid');
         const clearSearch = document.getElementById('clearSearch');
         
-        // Handle search button click
+        // Event listeners
         searchBtn.addEventListener('click', performSearch);
-        
-        // Handle Enter key in search input
         searchInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                performSearch();
-            }
+            if (e.key === 'Enter') performSearch();
         });
-        
-        // Handle clear search
-        clearSearch.addEventListener('click', () => {
-            searchInput.value = '';
-            searchResults.classList.remove('active');
-            searchResultsGrid.innerHTML = '';
-        });
+        clearSearch.addEventListener('click', clearSearchResults);
         
         async function performSearch() {
             const query = searchInput.value.trim();
-            
             if (!query) {
                 alert('Please enter a search term');
                 return;
             }
         
-            // Show loading state
+            // Show loading
             searchResultsGrid.innerHTML = '<div class="loading">Searching...</div>';
             searchResults.classList.add('active');
         
             try {
                 const response = await fetch(`https://mgi-login-worker.stevechikeabia.workers.dev/search?q=${encodeURIComponent(query)}`);
-                
                 if (!response.ok) throw new Error('Search failed');
                 
                 const data = await response.json();
                 displaySearchResults(data);
-                
             } catch (error) {
                 console.error('Search error:', error);
                 searchResultsGrid.innerHTML = '<div class="no-results">Failed to load search results. Please try again.</div>';
@@ -3117,7 +3104,6 @@
         
         function displaySearchResults(data) {
             const { results, counts } = data;
-            
             searchResultsGrid.innerHTML = '';
         
             if (counts.total === 0) {
@@ -3125,37 +3111,34 @@
                 return;
             }
         
-            // Display resources results
+            // Display resources
             results.resources.forEach(resource => {
-                const resultItem = createSearchResultItem(
+                const item = createSearchResultItem(
                     resource.topic || 'Untitled Resource',
                     resource.resourceType || 'Resource',
                     resource.resourceType || 'Resource',
                     resource,
                     'resource'
                 );
-                searchResultsGrid.appendChild(resultItem);
+                searchResultsGrid.appendChild(item);
             });
         
-            // Display courses results
+            // Display courses
             results.courses.forEach(course => {
-                const resultItem = createSearchResultItem(
+                const item = createSearchResultItem(
                     course['Course Name'] || 'Untitled Course',
                     'Course',
                     'Course',
                     course,
                     'course'
                 );
-                searchResultsGrid.appendChild(resultItem);
+                searchResultsGrid.appendChild(item);
             });
         }
         
         function createSearchResultItem(title, type, tag, data, resultType) {
             const item = document.createElement('div');
             item.className = 'search-result-item';
-            item.dataset.resultType = resultType;
-            item.dataset.resultData = JSON.stringify(data);
-        
             item.innerHTML = `
                 <div class="search-result-content">
                     <div class="search-result-title">${title}</div>
@@ -3173,25 +3156,32 @@
         
         function handleSearchResultClick(data, resultType) {
             if (resultType === 'resource') {
-                handleResourceResultClick(data);
-            } else if (resultType === 'course') {
-                handleCourseResultClick(data);
+                openResourceFromSearch(data);
+            } else {
+                openCourseFromSearch(data);
             }
         }
         
-        function handleResourceResultClick(resource) {
+        function openResourceFromSearch(resource) {
             const resourceType = resource.resourceType?.toLowerCase() || 'book';
             const resourceId = resource.resourceId || resource.id;
             const fileUrl = Array.isArray(resource.file) && resource.file.length > 0 ? resource.file[0].url : '';
             const title = resource.topic || 'Untitled';
         
+            // For now, use simple approach - switch to tab and hope it's there
+            // We'll enhance this in the next step
             switch(resourceType) {
                 case 'video':
                     switchToTab('videos');
                     setTimeout(() => {
-                        const videoCard = findAndLoadVideo(resourceId, fileUrl, title);
+                        const videoCard = document.querySelector(`.video-card[data-resource-id="${resourceId}"]`);
                         if (videoCard) {
                             videoCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            const thumbnail = videoCard.querySelector('.video-thumbnail');
+                            if (thumbnail) setTimeout(() => thumbnail.click(), 500);
+                        } else {
+                            // Fallback: show message
+                            alert('Video not found in current view. Please browse to the Videos tab and find it manually.');
                         }
                     }, 300);
                     break;
@@ -3199,9 +3189,13 @@
                 case 'audio':
                     switchToTab('audio');
                     setTimeout(() => {
-                        const audioCard = findAndLoadAudio(resourceId, fileUrl);
+                        const audioCard = document.querySelector(`.audio-card[data-resource-id="${resourceId}"]`);
                         if (audioCard) {
                             audioCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            const playBtn = audioCard.querySelector('.play-pause-btn');
+                            if (playBtn) setTimeout(() => playBtn.click(), 500);
+                        } else {
+                            alert('Audio not found in current view. Please browse to the Audio tab and find it manually.');
                         }
                     }, 300);
                     break;
@@ -3209,12 +3203,18 @@
                 case 'book':
                     switchToTab('books');
                     setTimeout(() => {
-                        openBookReaderWithFallback(title, fileUrl, resourceId);
+                        const bookCard = document.querySelector(`.book-card[data-resource-id="${resourceId}"]`);
+                        if (bookCard) {
+                            bookCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            setTimeout(() => bookCard.click(), 500);
+                        } else {
+                            // For books, we can still open directly since we have the file URL
+                            openBookReaderWithFallback(title, fileUrl, resourceId);
+                        }
                     }, 300);
                     break;
         
                 default:
-                    // For unknown types, try to open as book
                     switchToTab('books');
                     setTimeout(() => {
                         openBookReaderWithFallback(title, fileUrl, resourceId);
@@ -3222,57 +3222,31 @@
             }
         }
         
-        function handleCourseResultClick(course) {
+        function openCourseFromSearch(course) {
             const courseId = course['Course ID'] || course.id;
             
             switchToTab('courses');
-            
             setTimeout(() => {
-                // Find the course card and scroll to it
                 const courseCard = document.querySelector(`.course-card[data-resource-id="${courseId}"]`);
                 if (courseCard) {
                     courseCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     
-                    // Add highlight effect
+                    // Highlight effect
                     courseCard.style.transition = 'all 0.5s ease';
                     courseCard.style.boxShadow = '0 0 0 3px var(--primary), 0 10px 25px rgba(0, 0, 0, 0.15)';
-                    
-                    setTimeout(() => {
-                        courseCard.style.boxShadow = 'var(--shadow)';
-                    }, 2000);
+                    setTimeout(() => courseCard.style.boxShadow = 'var(--shadow)', 2000);
                 } else {
-                    // If course not found, it might be on another page
-                    console.log('Course not found on current page, would need to load appropriate page');
+                    alert('Course not found in current view. Please browse to the Courses tab and find it manually.');
                 }
             }, 300);
         }
         
-        // Helper functions to find and load specific resources
-        function findAndLoadVideo(resourceId, fileUrl, title) {
-            let videoCard = document.querySelector(`.video-card[data-resource-id="${resourceId}"]`);
-            
-            if (videoCard) {
-                // Trigger video load
-                const thumbnail = videoCard.querySelector('.video-thumbnail');
-                if (thumbnail) thumbnail.click();
-            } else {
-                // Create a temporary video card if not found
-                console.log('Video not found in current view, would need to search through paginated results');
-            }
-            
-            return videoCard;
+        function clearSearchResults() {
+            searchInput.value = '';
+            searchResults.classList.remove('active');
+            searchResultsGrid.innerHTML = '';
         }
         
-        function findAndLoadAudio(resourceId, fileUrl) {
-            const audioCard = document.querySelector(`.audio-card[data-resource-id="${resourceId}"]`);
-            
-            if (audioCard) {
-                const playBtn = audioCard.querySelector('.play-pause-btn');
-                if (playBtn) playBtn.click();
-            }
-            
-            return audioCard;
-        }
         // Tab Navigation
         const tabs = document.querySelectorAll('.nav-tab');
         const tabContents = document.querySelectorAll('.tab-content');
