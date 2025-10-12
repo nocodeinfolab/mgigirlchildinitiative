@@ -1734,42 +1734,34 @@
                         memberSince = `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
                     }
                 }
-                document.addEventListener("DOMContentLoaded", function () {
-                    // Run this after user data has been fetched
-                    if (typeof user !== "undefined" && user) {
-                        updateProfileTab(user);
-                    } else {
-                        // In case user loads later (asynchronously)
-                        const observer = new MutationObserver(() => {
-                            if (typeof user !== "undefined" && user) {
-                                updateProfileTab(user);
-                                observer.disconnect();
-                            }
-                        });
-                        observer.observe(document.body, { childList: true, subtree: true });
-                    }
-                
+                (function attachProfileUpdater() {
+                    // Define the update function
                     function updateProfileTab(user) {
-                        // Extract key progress values
+                        if (!user) {
+                            console.warn('updateProfileTab called with no user object.');
+                            return;
+                        }
+
+                        // Extract key progress values (safe number conversion)
                         const courseProgress = Number(user["Course Progress"] || 0);
                         const bookProgress = Number(user["Book Progress"] || 0);
                         const videoProgress = Number(user["Video Progress"] || 0);
-                
-                        // Define category targets (used to calculate percentage)
+
+                        // Category targets (tweakable)
                         const targets = { courses: 5, books: 10, videos: 20 };
-                
-                        // Compute category percentages
+
+                        // Compute category percentages (capped at 100)
                         const coursePercent = Math.min((courseProgress / targets.courses) * 100, 100);
-                        const bookPercent = Math.min((bookProgress / targets.books) * 100, 100);
-                        const videoPercent = Math.min((videoProgress / targets.videos) * 100, 100);
-                
-                        // Calculate overall progress (average)
+                        const bookPercent   = Math.min((bookProgress   / targets.books)   * 100, 100);
+                        const videoPercent  = Math.min((videoProgress  / targets.videos)  * 100, 100);
+
+                        // Overall progress = average of category percents
                         const overallProgress = Math.round((coursePercent + bookPercent + videoPercent) / 3);
-                
-                        // Compute XP Points
+
+                        // XP calculation (gamified; adjust weights if desired)
                         const xp = (courseProgress * 20) + (bookProgress * 10) + (videoProgress * 5);
-                
-                        // Assign fun badge titles based on total progress sum
+
+                        // Fun badge title by total activity
                         const totalProgress = courseProgress + bookProgress + videoProgress;
                         let badgeTitle = "";
                         if (totalProgress < 3) badgeTitle = "🎯 Rookie Learner";
@@ -1777,30 +1769,42 @@
                         else if (totalProgress < 12) badgeTitle = "🔥 Knowledge Seeker";
                         else if (totalProgress < 20) badgeTitle = "🏅 Mastermind";
                         else badgeTitle = "👑 Legend Learner";
-                
-                        // Display Achievements
-                        const profileStats = document.querySelectorAll("#profile .progress-stats .stat-number");
+
+                        // Update Achievements UI
+                        const profileStats  = document.querySelectorAll("#profile .progress-stats .stat-number");
                         const profileLabels = document.querySelectorAll("#profile .progress-stats .stat-label");
-                
+
                         if (profileStats.length >= 3) {
                             profileStats[0].textContent = badgeTitle;
                             profileStats[1].textContent = `${xp} XP`;
                             profileStats[2].textContent = `${overallProgress}%`;
+                        } else {
+                            console.warn('Expected at least 3 .stat-number elements in #profile .progress-stats');
                         }
-                
+
                         if (profileLabels.length >= 3) {
                             profileLabels[0].textContent = "Badge Title";
                             profileLabels[1].textContent = "XP Points";
                             profileLabels[2].textContent = "Overall Progress";
                         }
-                
+
                         // Generate Current Goals dynamically
-                        const goalsContainer = document.querySelector("#profile .progress-card:nth-child(2) .lessons-list");
+                        // Use nth-of-type to count .progress-card elements (more reliable than nth-child)
+                        let goalsContainer = document.querySelector("#profile .progress-card:nth-of-type(2) .lessons-list");
+
+                        // Fallback: find the .lessons-list inside #profile if nth-of-type didn't match
+                        if (!goalsContainer) {
+                            goalsContainer = document.querySelector("#profile .lessons-list");
+                            if (!goalsContainer) {
+                                console.warn('Could not find goals container (.lessons-list) inside #profile.');
+                            }
+                        }
+
                         if (goalsContainer) {
                             const nextCourseGoal = courseProgress + 1;
-                            const nextBookGoal = bookProgress + 2;
-                            const nextVideoGoal = videoProgress + 5;
-                
+                            const nextBookGoal   = bookProgress + 2;
+                            const nextVideoGoal  = videoProgress + 5;
+
                             goalsContainer.innerHTML = `
                                 <div class="lesson-item">
                                     <span>Complete ${nextCourseGoal} total courses to unlock a new badge</span>
@@ -1821,7 +1825,26 @@
                             `;
                         }
                     }
-                });
+
+                    // Immediately call the updater using the `user` variable available in the outer scope
+                    // (the outer DOMContentLoaded fetch assigns `const user = await response.json();`)
+                    try {
+                        if (typeof user !== "undefined" && user) {
+                            updateProfileTab(user);
+                        } else {
+                            // If, for some reason, user isn't defined yet, observe body for changes (rare)
+                            const mo = new MutationObserver(() => {
+                                if (typeof user !== "undefined" && user) {
+                                    updateProfileTab(user);
+                                    mo.disconnect();
+                                }
+                            });
+                            mo.observe(document.body, { childList: true, subtree: true });
+                        }
+                    } catch (err) {
+                        console.error('Failed to attach profile updater:', err);
+                    }
+                })();
                 
                 
                 // Update profile header
