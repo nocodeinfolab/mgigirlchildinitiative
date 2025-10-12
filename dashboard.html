@@ -1269,6 +1269,29 @@
                 padding: 1rem;
             }
         }
+        @media (max-width: 768px) {
+          .lesson-modal-body {
+            padding: 1rem;
+            max-height: 80vh;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+          }
+        
+          .lesson-modal-body video {
+            max-height: 35vh;   /* Reduce video height for mobile */
+            width: 100%;
+            object-fit: contain;
+            border-radius: 8px;
+          }
+        
+          .lessons-list-container {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow-y: auto;
+          }
+        }
 
     </style>
 </head>
