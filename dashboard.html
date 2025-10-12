@@ -1342,14 +1342,24 @@
             font-size: 0.65rem;
         }
 
-        /* Fix modal body layout */
+
         .lesson-modal-body {
-            padding: 1.5rem;
-            background: #fafafa;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          padding: 1.5rem;
+        }
+
+        .lessons-list-container {
+          flex: 1 1 auto;
+          min-height: 0;
+          overflow-y: auto;
+          margin-top: 10px;
+        }
+
+        .lessons-list-compact {
+          max-height: 35vh;
+          overflow-y: auto;
         }
 
         #lessonContent {
