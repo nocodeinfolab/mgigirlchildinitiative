@@ -3103,7 +3103,7 @@
                 modal = document.createElement('div');
                 modal.id = 'lessonModal';
                 modal.innerHTML = `
-                    <div class="lesson-modal-overlay"></div>
+                    <div class="lesson-modal-overlay" id="lessonModalOverlay"></div>
                     <div class="lesson-modal-content">
                         <div class="lesson-modal-header">
                             <div style="flex: 1;">
@@ -3134,7 +3134,15 @@
 
                 // Event handlers - use proper function references
                 modal.querySelector('#closeLessonModal').addEventListener('click', closeLessonModal);
-                modal.querySelector('.lesson-modal-overlay').addEventListener('click', closeLessonModal);
+                
+                // Fix overlay click - only close when clicking directly on overlay, not scrollbars
+                modal.querySelector('#lessonModalOverlay').addEventListener('click', function(e) {
+                    // Only close if clicking directly on the overlay element itself
+                    // and not on any child elements (like scrollbars)
+                    if (e.target === this) {
+                        closeLessonModal();
+                    }
+                });
                 
                 // Lesson navigation events - fix the reference issue
                 modal.querySelector('#prevLesson').addEventListener('click', function(e) {
