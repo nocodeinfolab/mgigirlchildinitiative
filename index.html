@@ -278,6 +278,7 @@
             color: var(--primary);
             text-decoration: none;
             font-size: 0.9rem;
+            cursor: pointer;
         }
 
         .forgot-password a:hover {
@@ -309,6 +310,93 @@
             right: 0;
         }
 
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            animation: fadeIn 0.3s;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: var(--shadow-lg);
+            animation: slideUp 0.3s;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-title {
+            font-size: 1.3rem;
+            color: var(--text-dark);
+            font-weight: 600;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-light);
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.3s;
+        }
+
+        .close-btn:hover {
+            background: var(--light-pink);
+            color: var(--primary);
+        }
+
+        .modal-message {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        .modal-message.show {
+            display: block;
+        }
+
+        .modal-message.success {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #66bb6a;
+        }
+
+        .modal-message.error {
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #ef5350;
+        }
+
         @media (max-width: 768px) {
             body {
                 padding: 1rem;
@@ -334,6 +422,11 @@
                 width: 60px;
                 height: 60px;
                 font-size: 1.8rem;
+            }
+
+            .modal {
+                padding: 1.5rem;
+                margin: 1rem;
             }
         }
     </style>
@@ -369,7 +462,7 @@
                             <button type="button" class="toggle-password" data-target="login-password">👁️</button>
                         </div>
                         <div class="forgot-password">
-                            <a href="#forgot">Forgot Password?</a>
+                            <a id="forgot-password-link">Forgot Password?</a>
                         </div>
                     </div>
 
@@ -425,6 +518,33 @@
         </div>
     </div>
 
+    <!-- Forgot Password Modal -->
+    <div class="modal-overlay" id="forgot-password-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">Reset Your Password</h2>
+                <button class="close-btn" id="close-modal">&times;</button>
+            </div>
+            
+            <div class="modal-message" id="modal-message"></div>
+            
+            <p style="margin-bottom: 1.5rem; color: var(--text-light);">
+                Enter your email address and we'll send you a link to reset your password.
+            </p>
+            
+            <form id="forgot-password-form">
+                <div class="form-group">
+                    <label for="forgot-email">Email Address</label>
+                    <input type="email" id="forgot-email" name="email" placeholder="Enter your email" required>
+                </div>
+                
+                <button type="submit" class="submit-btn" id="forgot-password-btn">
+                    <span class="btn-text">Send Reset Link</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
     <script>
         // Tab switching
         const tabButtons = document.querySelectorAll('.tab-btn');
@@ -472,6 +592,87 @@
         function hideMessage() {
             messageDiv.classList.remove('show');
         }
+
+        // Modal functionality
+        const forgotPasswordLink = document.getElementById('forgot-password-link');
+        const forgotPasswordModal = document.getElementById('forgot-password-modal');
+        const closeModalBtn = document.getElementById('close-modal');
+        const forgotPasswordForm = document.getElementById('forgot-password-form');
+        const forgotPasswordBtn = document.getElementById('forgot-password-btn');
+        const modalMessage = document.getElementById('modal-message');
+
+        function showModalMessage(text, type) {
+            modalMessage.textContent = text;
+            modalMessage.className = `modal-message ${type} show`;
+        }
+
+        function hideModalMessage() {
+            modalMessage.classList.remove('show');
+        }
+
+        // Open modal
+        forgotPasswordLink.addEventListener('click', () => {
+            forgotPasswordModal.classList.add('active');
+            hideModalMessage();
+            forgotPasswordForm.reset();
+        });
+
+        // Close modal
+        closeModalBtn.addEventListener('click', () => {
+            forgotPasswordModal.classList.remove('active');
+        });
+
+        // Close modal when clicking outside
+        forgotPasswordModal.addEventListener('click', (e) => {
+            if (e.target === forgotPasswordModal) {
+                forgotPasswordModal.classList.remove('active');
+            }
+        });
+
+        // Forgot password form submission
+        forgotPasswordForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('forgot-email').value;
+            
+            if (!email) {
+                showModalMessage('Please enter your email address.', 'error');
+                return;
+            }
+
+            forgotPasswordBtn.disabled = true;
+            forgotPasswordBtn.innerHTML = '<span class="loading"></span>';
+
+            try {
+                const response = await fetch('https://mgi-login-worker.stevechikeabia.workers.dev/forgot_password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showModalMessage('If your email is registered with us, you\'ll receive a message shortly with a link to reset your password.', 'success');
+                    forgotPasswordForm.reset();
+                    
+                    // Close modal after 3 seconds
+                    setTimeout(() => {
+                        forgotPasswordModal.classList.remove('active');
+                    }, 3000);
+                } else {
+                    showModalMessage(data.error || 'Something went wrong. Please try again.', 'error');
+                }
+            } catch (error) {
+                console.error('Forgot password error:', error);
+                showModalMessage('Network error. Please check your connection.', 'error');
+            } finally {
+                forgotPasswordBtn.disabled = false;
+                forgotPasswordBtn.innerHTML = '<span class="btn-text">Send Reset Link</span>';
+            }
+        });
 
         // Login form submission
         const loginForm = document.getElementById('loginForm');
@@ -547,7 +748,6 @@
             signupBtn.innerHTML = '<span class="loading"></span>';
 
             try {
-                // TODO: Replace with your actual Cloudflare Workers endpoint
                 const response = await fetch('https://mgi-login-worker.stevechikeabia.workers.dev/signup', {
                     method: 'POST',
                     headers: {
