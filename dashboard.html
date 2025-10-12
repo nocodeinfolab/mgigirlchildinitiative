@@ -1477,6 +1477,42 @@
             color: #666;
             margin-top: 0.3rem;
         }
+        
+        .nav-tabs {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 0.5rem 0;
+            list-style: none;
+            background: var(--card-bg, #fff);
+            border-top: 1px solid #ddd;
+        }
+        
+        .nav-tab {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 0.8rem;
+            color: #555;
+            cursor: pointer;
+            transition: color 0.2s, transform 0.2s;
+        }
+        
+        .nav-tab.active {
+            color: var(--primary, #0078ff);
+        }
+        
+        .nav-tab:hover {
+            color: var(--primary, #0078ff);
+            transform: translateY(-2px);
+        }
+        
+        .nav-icon {
+            width: 22px;
+            height: 22px;
+            stroke-width: 2;
+            margin-bottom: 0.2rem;
+        }
 
     </style>
 </head>
@@ -1505,14 +1541,56 @@
     <nav class="nav">
         <div class="nav-content">
             <ul class="nav-tabs">
-                <li class="nav-tab active" data-tab="home">🏠 Home</li>
-                <li class="nav-tab" data-tab="books">📚 Books</li>
-                <li class="nav-tab" data-tab="videos">🎥 Videos</li>
-                <li class="nav-tab" data-tab="audio">🎧 Audio</li>
-                <li class="nav-tab" data-tab="courses">🎓 Courses</li>
-                <li class="nav-tab" data-tab="games">🎮 Games</li>
-                <li class="nav-tab" data-tab="profile">👤 Profile</li>
+                <li class="nav-tab active" data-tab="home">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M3 9.5L12 3l9 6.5V21a1 1 0 0 1-1 1h-6v-7H10v7H4a1 1 0 0 1-1-1V9.5Z" stroke-width="2" stroke-linejoin="round"/>
+                    </svg>
+                    Home
+                </li>
+                <li class="nav-tab" data-tab="books">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M4 19.5V5a2 2 0 0 1 2-2h12v16H6a2 2 0 0 0-2 2v-1.5Z" stroke-width="2" stroke-linejoin="round"/>
+                        <path d="M16 3v16" stroke-width="2" stroke-linejoin="round"/>
+                    </svg>
+                    Books
+                </li>
+                <li class="nav-tab" data-tab="videos">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <polygon points="5 3 19 12 5 21 5 3" stroke-width="2" stroke-linejoin="round"/>
+                    </svg>
+                    Videos
+                </li>
+                <li class="nav-tab" data-tab="audio">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M9 18V5l12-2v13" stroke-width="2" stroke-linejoin="round"/>
+                        <circle cx="6" cy="18" r="3" stroke-width="2"/>
+                        <circle cx="18" cy="16" r="3" stroke-width="2"/>
+                    </svg>
+                    Audio
+                </li>
+                <li class="nav-tab" data-tab="courses">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M12 3l9 5-9 5-9-5 9-5z" stroke-width="2" stroke-linejoin="round"/>
+                        <path d="M3 8v6a9 9 0 0 0 18 0V8" stroke-width="2" stroke-linejoin="round"/>
+                    </svg>
+                    Courses
+                </li>
+                <li class="nav-tab" data-tab="games">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M6 8v8M18 8v8M9 12h6" stroke-width="2" stroke-linecap="round"/>
+                        <rect x="3" y="5" width="18" height="14" rx="2" stroke-width="2" stroke-linejoin="round"/>
+                    </svg>
+                    Games
+                </li>
+                <li class="nav-tab" data-tab="profile">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <circle cx="12" cy="7" r="4" stroke-width="2"/>
+                        <path d="M5.5 21a8.38 8.38 0 0 1 13 0" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Profile
+                </li>
             </ul>
+
         </div>
     </nav>
 
