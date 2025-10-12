@@ -1111,6 +1111,108 @@
             padding: 2rem;
             grid-column: 1 / -1;
         }
+        /* Enhanced Lesson Modal Styles */
+        .lesson-navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: var(--light-pink);
+            border-radius: 10px;
+        }
+        
+        .lesson-nav-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            min-height: 44px;
+        }
+        
+        .lesson-nav-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .lesson-progress {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: bold;
+            color: var(--text-dark);
+        }
+        
+        #currentLessonNumber {
+            color: var(--primary);
+            font-size: 1.2rem;
+        }
+        
+        .lessons-list-container {
+            margin-top: 25px;
+            border-top: 2px solid var(--light-purple);
+            padding-top: 15px;
+        }
+        
+        .lessons-list-compact {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid var(--light-purple);
+            border-radius: 8px;
+            padding: 10px;
+        }
+        
+        .lesson-list-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            margin-bottom: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            gap: 10px;
+        }
+        
+        .lesson-list-item:hover {
+            background: var(--light-pink);
+        }
+        
+        .lesson-list-item.current-lesson {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .lesson-number {
+            font-weight: bold;
+            min-width: 25px;
+        }
+        
+        .lesson-name {
+            flex: 1;
+            font-size: 0.9rem;
+        }
+        
+        .current-badge {
+            background: rgba(255,255,255,0.2);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .lesson-navigation {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .lesson-nav-btn {
+                width: 100%;
+            }
+        }
 
 
     </style>
