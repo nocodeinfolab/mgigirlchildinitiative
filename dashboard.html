@@ -1742,6 +1742,95 @@
                         memberSince = `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
                     }
                 }
+                document.addEventListener("DOMContentLoaded", function () {
+                    // Run this after user data has been fetched
+                    if (typeof user !== "undefined" && user) {
+                        updateProfileTab(user);
+                    } else {
+                        // In case user loads later (asynchronously)
+                        const observer = new MutationObserver(() => {
+                            if (typeof user !== "undefined" && user) {
+                                updateProfileTab(user);
+                                observer.disconnect();
+                            }
+                        });
+                        observer.observe(document.body, { childList: true, subtree: true });
+                    }
+                
+                    function updateProfileTab(user) {
+                        // Extract key progress values
+                        const courseProgress = Number(user["Course Progress"] || 0);
+                        const bookProgress = Number(user["Book Progress"] || 0);
+                        const videoProgress = Number(user["Video Progress"] || 0);
+                
+                        // Define category targets (used to calculate percentage)
+                        const targets = { courses: 5, books: 10, videos: 20 };
+                
+                        // Compute category percentages
+                        const coursePercent = Math.min((courseProgress / targets.courses) * 100, 100);
+                        const bookPercent = Math.min((bookProgress / targets.books) * 100, 100);
+                        const videoPercent = Math.min((videoProgress / targets.videos) * 100, 100);
+                
+                        // Calculate overall progress (average)
+                        const overallProgress = Math.round((coursePercent + bookPercent + videoPercent) / 3);
+                
+                        // Compute XP Points
+                        const xp = (courseProgress * 20) + (bookProgress * 10) + (videoProgress * 5);
+                
+                        // Assign fun badge titles based on total progress sum
+                        const totalProgress = courseProgress + bookProgress + videoProgress;
+                        let badgeTitle = "";
+                        if (totalProgress < 3) badgeTitle = "🎯 Rookie Learner";
+                        else if (totalProgress < 7) badgeTitle = "⚡ Fast Learner";
+                        else if (totalProgress < 12) badgeTitle = "🔥 Knowledge Seeker";
+                        else if (totalProgress < 20) badgeTitle = "🏅 Mastermind";
+                        else badgeTitle = "👑 Legend Learner";
+                
+                        // Display Achievements
+                        const profileStats = document.querySelectorAll("#profile .progress-stats .stat-number");
+                        const profileLabels = document.querySelectorAll("#profile .progress-stats .stat-label");
+                
+                        if (profileStats.length >= 3) {
+                            profileStats[0].textContent = badgeTitle;
+                            profileStats[1].textContent = `${xp} XP`;
+                            profileStats[2].textContent = `${overallProgress}%`;
+                        }
+                
+                        if (profileLabels.length >= 3) {
+                            profileLabels[0].textContent = "Badge Title";
+                            profileLabels[1].textContent = "XP Points";
+                            profileLabels[2].textContent = "Overall Progress";
+                        }
+                
+                        // Generate Current Goals dynamically
+                        const goalsContainer = document.querySelector("#profile .progress-card:nth-child(2) .lessons-list");
+                        if (goalsContainer) {
+                            const nextCourseGoal = courseProgress + 1;
+                            const nextBookGoal = bookProgress + 2;
+                            const nextVideoGoal = videoProgress + 5;
+                
+                            goalsContainer.innerHTML = `
+                                <div class="lesson-item">
+                                    <span>Complete ${nextCourseGoal} total courses to unlock a new badge</span>
+                                    <div class="lesson-status ${coursePercent >= 100 ? "completed" : ""}"></div>
+                                </div>
+                                <div class="lesson-item">
+                                    <span>Read ${nextBookGoal} total books to level up</span>
+                                    <div class="lesson-status ${bookPercent >= 100 ? "completed" : ""}"></div>
+                                </div>
+                                <div class="lesson-item">
+                                    <span>Watch ${nextVideoGoal} total videos to earn more XP</span>
+                                    <div class="lesson-status ${videoPercent >= 100 ? "completed" : ""}"></div>
+                                </div>
+                                <div class="lesson-item">
+                                    <span>Keep your learning streak alive this week!</span>
+                                    <div class="lesson-status"></div>
+                                </div>
+                            `;
+                        }
+                    }
+                });
+                
                 
                 // Update profile header
                 document.querySelector('.profile-header h2').textContent = fullName;
