@@ -1396,21 +1396,18 @@
         }
         @media (max-width: 768px) {
           .lesson-modal-body {
-            padding: 1rem;
-            max-height: 80vh;
-            overflow-y: auto;
             display: flex;
             flex-direction: column;
+            max-height: 80vh;
+            overflow-y: auto;
             gap: 10px;
           }
-        
           .lesson-modal-body video {
-            max-height: 35vh;   /* Reduce video height for mobile */
+            max-height: 35vh;
             width: 100%;
             object-fit: contain;
             border-radius: 8px;
           }
-        
           .lessons-list-container {
             flex: 1 1 auto;
             min-height: 0;
@@ -3382,7 +3379,7 @@
                                 const completionMsg = document.createElement('div');
                                 completionMsg.style.cssText = 'background: #4CAF50; color: white; padding: 10px; border-radius: 5px; text-align: center; margin-top: 10px;';
                                 completionMsg.innerHTML = '🎉 Course Completed! Progress saved.';
-                                content.appendChild(completionMsg);
+                                content.prepend(completionMsg);
                             } else {
                                 console.error('❌ Server responded with error:', data);
                             }
@@ -3404,7 +3401,7 @@
                         video.play();
                         replayBtn.remove();
                     });
-                    content.appendChild(replayBtn);
+                    content.prepend(replayBtn);
                 });
 
             } else if (fileUrl.endsWith('.pdf')) {
@@ -3539,7 +3536,7 @@
                 }
             }
         }
-        // ===== SEARCH FUNCTIONALITY =====
+        
         // ===== ENHANCED SEARCH FUNCTIONALITY =====
         const searchInput = document.getElementById('searchInput');
         const searchBtn = document.getElementById('searchBtn');
