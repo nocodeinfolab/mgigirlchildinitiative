@@ -1238,193 +1238,154 @@
             padding: 2rem;
             grid-column: 1 / -1;
         }
-        /* Enhanced Lesson Modal Styles */
         
-        .lesson-navigation {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin: 15px 0;
-            padding: 10px 15px;
-            background: var(--light-pink);
-            border-radius: 8px;
-            order: 2; /* Move navigation below content */
-        }
-
-        .lesson-nav-btn {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 0.85rem;
-            min-height: 36px;
-            transition: all 0.2s ease;
-        }
-
-        .lesson-nav-btn:hover:not(:disabled) {
-            background: var(--secondary);
-            transform: translateY(-1px);
-        }
-
-        .lesson-nav-btn:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-            transform: none;
-        }
-
         .lesson-progress {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            font-weight: bold;
-            color: var(--text-dark);
-            font-size: 0.9rem;
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          font-weight: bold;
+          color: var(--text-dark, #333);
+          font-size: 0.9rem;
         }
 
         #currentLessonNumber {
-            color: var(--primary);
-            font-size: 1rem;
+          color: var(--primary, #6c63ff);
+          font-size: 1rem;
         }
 
-        .lessons-list-container {
-            margin-top: 20px;
-            border-top: 2px solid var(--light-purple);
-            padding-top: 15px;
-            order: 3; /* Keep lessons list at bottom */
-        }
-
-        .lessons-list-compact {
-            max-height: 200px;
-            overflow-y: auto;
-            border: 1px solid var(--light-purple);
-            border-radius: 8px;
-            padding: 10px;
-        }
-
-        .lesson-list-item {
-            display: flex;
-            align-items: center;
-            padding: 8px;
-            margin-bottom: 4px;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: all 0.3s;
-            gap: 8px;
-            font-size: 0.9rem;
-        }
-
-        .lesson-list-item:hover {
-            background: var(--light-pink);
-        }
-
-        .lesson-list-item.current-lesson {
-            background: var(--primary);
-            color: white;
-        }
-
-        .lesson-number {
-            font-weight: bold;
-            min-width: 22px;
-        }
-
-        .lesson-name {
-            flex: 1;
-            font-size: 0.85rem;
-        }
-
-        .current-badge {
-            background: rgba(255,255,255,0.2);
-            padding: 2px 6px;
-            border-radius: 8px;
-            font-size: 0.65rem;
-        }
-
-
+        /* --- Modal Layout --- */
         .lesson-modal-body {
           display: flex;
           flex-direction: column;
           gap: 10px;
           padding: 1.5rem;
-          max-height: 75vh; 
-          min-height: 0;    
           box-sizing: border-box;
-        }
-
-        .lessons-list-container {
-          flex: 1 1 auto;
+          max-height: 75vh;    /* Limits modal height to viewport */
           min-height: 0;
-          overflow-y: auto;
-          margin-top: 10px;
+          overflow: visible;   /* Only children scroll, not modal body itself */
         }
 
-        .lessons-list-compact {
-          
-          overflow-y: auto;
+        .lesson-modal-body video,
+        .lesson-modal-body iframe {
+          width: 100%;
+          max-height: 35vh;
+          border-radius: 8px;
+          background: #000;
+          object-fit: contain;
+          margin-bottom: 10px;
+          border: none;
         }
 
+        /* --- Lesson Content --- */
         #lessonContent {
-            order: 1; 
-            min-height: 300px;
+          order: 1;
+          min-height: 200px;
+        }
+
+        /* --- Lessons List Section --- */
+        .lessons-list-container {
+          order: 3;
+          margin-top: 20px;
+          border-top: 2px solid var(--light-purple, #d1c4e9);
+          padding-top: 15px;
+          /* SCROLLABLE, with fixed height on desktop */
+          max-height: 250px;
+          min-height: 100px;
+          overflow-y: auto;
+          flex: 0 1 auto;
         }
 
         
-        .lesson-modal-body video {
-            width: 100%;
-            max-height: 35vh;
-            border-radius: 8px;
-            background: #000;
+        .lessons-list-compact {
+          height: 100%;
+          overflow-y: auto;
+          border: 1px solid var(--light-purple, #d1c4e9);
+          border-radius: 8px;
+          padding: 10px;
+          background: #fff;
         }
 
-        .lesson-modal-body iframe {
-            width: 100%;
-            height: 60vh;
-            border: none;
-            border-radius: 8px;
+        .lesson-list-item {
+          display: flex;
+          align-items: center;
+          padding: 8px;
+          margin-bottom: 4px;
+          border-radius: 5px;
+          cursor: pointer;
+          transition: all 0.3s;
+          gap: 8px;
+          font-size: 0.9rem;
         }
 
-        /* Responsive improvements */
-        @media (max-width: 768px) {
-            .lesson-navigation {
-                flex-direction: row;
-                gap: 8px;
-                padding: 8px 12px;
-            }
-            
-            .lesson-nav-btn {
-                font-size: 0.8rem;
-                padding: 5px 10px;
-                min-height: 32px;
-            }
-            
-            .lesson-progress {
-                font-size: 0.8rem;
-            }
-            
-            .lesson-modal-body {
-                padding: 1rem;
-            }
+        .lesson-list-item:hover {
+          background: var(--light-pink, #f8e0e6);
         }
+
+        .lesson-list-item.current-lesson {
+          background: var(--primary, #6c63ff);
+          color: white;
+        }
+
+        .lesson-number {
+          font-weight: bold;
+          min-width: 22px;
+        }
+
+        .lesson-name {
+          flex: 1;
+          font-size: 0.85rem;
+        }
+
+        .current-badge {
+          background: rgba(255,255,255,0.2);
+          padding: 2px 6px;
+          border-radius: 8px;
+          font-size: 0.65rem;
+        }
+
+        /* --- Responsive Improvements (Mobile) --- */
         @media (max-width: 768px) {
+          .lesson-navigation {
+            flex-direction: row;
+            gap: 8px;
+            padding: 8px 12px;
+          }
+          
+          .lesson-nav-btn {
+            font-size: 0.8rem;
+            padding: 5px 10px;
+            min-height: 32px;
+          }
+          
+          .lesson-progress {
+            font-size: 0.8rem;
+          }
+
           .lesson-modal-body {
-            display: flex;
-            flex-direction: column;
+            padding: 1rem;
             max-height: 80vh;
-            overflow-y: auto;
+            box-sizing: border-box;
             gap: 10px;
+            overflow: visible;
           }
-          .lesson-modal-body video {
-            max-height: 35vh;
-            width: 100%;
-            object-fit: contain;
-            border-radius: 8px;
+
+          .lesson-modal-body video,
+          .lesson-modal-body iframe {
+            max-height: 30vh;
+            margin-bottom: 8px;
           }
+
           .lessons-list-container {
-            flex: 1 1 auto;
-            min-height: 0;
+            max-height: 25vh;
+            min-height: 80px;
             overflow-y: auto;
+            margin-top: 10px;
+            padding-top: 10px;
+          }
+
+          .lessons-list-compact {
+            max-height: 20vh;
+            padding: 8px;
           }
         }
 
