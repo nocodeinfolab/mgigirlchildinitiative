@@ -1394,13 +1394,13 @@
                 padding: 1rem;
             }
         }
-        @media (max-width: 768px) { 
+        @media (max-width: 768px) {
           .lesson-modal-body {
             display: flex;
             flex-direction: column;
             max-height: 80vh;
+            overflow-y: auto;
             gap: 10px;
-            padding: 1rem;
           }
           .lesson-modal-body video {
             max-height: 35vh;
@@ -1412,9 +1412,8 @@
             flex: 1 1 auto;
             min-height: 0;
             overflow-y: auto;
-            margin-top: 10px;
           }
-        }          
+        }
 
     </style>
 </head>
@@ -3295,7 +3294,10 @@
                         <div class="lesson-modal-body">
                             <div id="lessonContent"></div>
                             
-                            
+                            <div class="lessons-list-container">
+                                <h3 style="margin: 10px 0; color: #333; font-size: 1rem;">All Lessons</h3>
+                                <div id="lessonsList" class="lessons-list-compact"></div>
+                            </div>
                         </div>
                     </div>
                 `;
