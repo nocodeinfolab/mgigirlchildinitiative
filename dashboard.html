@@ -1388,6 +1388,48 @@
             padding: 8px;
           }
         }
+        @media (min-width: 769px) {
+            .lesson-modal-body {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                padding: 1.5rem;
+                box-sizing: border-box;
+                max-height: 75vh;
+                min-height: 0;
+                overflow-y: auto;
+            }
+
+            .lesson-modal-body video,
+            .lesson-modal-body iframe {
+                width: 100%;
+                max-height: 35vh;
+                border-radius: 8px;
+                background: #000;
+                object-fit: contain;
+                margin-bottom: 10px;
+                border: none;
+                flex-shrink: 0; /* Prevent video from shrinking */
+            }
+
+            #lessonContent {
+                order: 1;
+                min-height: 200px;
+                flex-shrink: 0; /* Prevent content area from shrinking */
+            }
+
+            .lessons-list-container {
+                order: 2; /* Changed from 3 to 2 to ensure proper order */
+                margin-top: 20px;
+                border-top: 2px solid var(--light-purple, #d1c4e9);
+                padding-top: 15px;
+                max-height: 250px;
+                min-height: 100px;
+                overflow-y: auto;
+                flex: 0 1 auto;
+            }
+        }
+
 
     </style>
 </head>
