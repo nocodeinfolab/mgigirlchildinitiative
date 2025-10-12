@@ -3442,44 +3442,45 @@
         
         function openCourseFromSearch(course) {
             const courseId = course['Course ID'] || course.id;
-            
-            switchToTab('courses');
-            setTimeout(() => {
-                const courseCard = document.querySelector(`.course-card[data-resource-id="${courseId}"]`);
-                if (courseCard) {
-                    courseCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    
-                    // Highlight effect
-                    courseCard.style.transition = 'all 0.5s ease';
-                    courseCard.style.boxShadow = '0 0 0 3px var(--primary), 0 10px 25px rgba(0, 0, 0, 0.15)';
-                    setTimeout(() => courseCard.style.boxShadow = 'var(--shadow)', 2000);
-                } else {
-                    // If course not found, open the first lesson directly
-                    openCourseDirectly(course);
-                }
-            }, 300);
-        }
-        
-        // Direct course opening (fallback when course not in current view)
-        function openCourseDirectly(course) {
             const courseName = course['Course Name'] || 'Untitled Course';
-            const lessons = [];
             
-            // Extract lessons from course data
-            for (let i = 1; i <= 20; i++) {
+            // First, try to find the course in our cache or current view
+            const cachedCourse = courseCache.get(courseId);
+            const courseData = cachedCourse || course;
+            
+            // Extract lessons from the course data
+            const lessons = [];
+            for (let i = 1; i <= 50; i++) {
                 const lessonField = `Lesson ${i}`;
-                if (course[lessonField] && course[lessonField].fileName && course[lessonField].fileUrl) {
-                    lessons.push(course[lessonField]);
+                if (courseData[lessonField] && courseData[lessonField].fileName && courseData[lessonField].fileUrl) {
+                    lessons.push({
+                        index: i - 1,
+                        fileName: courseData[lessonField].fileName,
+                        fileUrl: courseData[lessonField].fileUrl
+                    });
                 }
             }
             
             if (lessons.length > 0) {
-                // Open the first lesson in a modal
-                openLessonModal(courseName, course['Course ID'], lessons[0].fileName, lessons[0].fileUrl, 0, lessons.length);
+                
+                openLessonModal(courseName, courseId, lessons[0].fileName, lessons[0].fileUrl, 0, lessons.length);
             } else {
-                alert('No lessons available for this course');
+                // Fallback: switch to courses tab and try to find the course card
+                switchToTab('courses');
+                setTimeout(() => {
+                    const courseCard = document.querySelector(`.course-card[data-resource-id="${courseId}"]`);
+                    if (courseCard) {
+                        courseCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        courseCard.style.transition = 'all 0.5s ease';
+                        courseCard.style.boxShadow = '0 0 0 3px var(--primary), 0 10px 25px rgba(0, 0, 0, 0.15)';
+                        setTimeout(() => courseCard.style.boxShadow = 'var(--shadow)', 2000);
+                    } else {
+                        alert('No lessons available for this course');
+                    }
+                }, 300);
             }
         }
+
         
         // Helper function to format time (MM:SS)
         function formatTime(seconds) {
