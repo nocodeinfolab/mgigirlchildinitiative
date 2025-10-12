@@ -1440,6 +1440,32 @@
         .search-container {
             align-items: center;
         }
+        
+        #profile .progress-stats {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1.2rem;
+            margin-top: 1rem;
+        }
+
+        #profile .progress-stats .stat {
+            flex: 1;
+            text-align: center;
+        }
+
+        #profile .progress-stats .stat-number {
+            font-size: 1rem;       /* ↓ reduce size from typical 1.4–1.6rem */
+            font-weight: 600;
+            color: var(--primary, #333);
+        }
+
+        #profile .progress-stats .stat-label {
+            font-size: 0.85rem;    /* ↓ smaller descriptive text */
+            color: #666;
+            margin-top: 0.2rem;
+        }
+
 
 
 
