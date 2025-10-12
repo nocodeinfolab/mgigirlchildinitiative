@@ -3139,15 +3139,7 @@
                         </div>
                         <div class="lesson-modal-body">
                             <div id="lessonContent"></div>
-                            <div class="lesson-navigation">
-                                <button id="prevLesson" class="lesson-nav-btn">← Previous</button>
-                                <div class="lesson-progress">
-                                    <span id="currentLessonNumber">${lessonIndex + 1}</span>
-                                    <span>of</span>
-                                    <span id="totalLessons">${totalLessons}</span>
-                                </div>
-                                <button id="nextLesson" class="lesson-nav-btn">Next →</button>
-                            </div>
+                            
                             <div class="lessons-list-container">
                                 <h3 style="margin: 10px 0; color: #333; font-size: 1rem;">All Lessons</h3>
                                 <div id="lessonsList" class="lessons-list-compact"></div>
@@ -3169,16 +3161,7 @@
                     }
                 });
                 
-                // Lesson navigation events - fix the reference issue
-                modal.querySelector('#prevLesson').addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    navigateToPreviousLesson();
-                });
                 
-                modal.querySelector('#nextLesson').addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    navigateToNextLesson();
-                });
             }
 
             // Store current course data globally for navigation
