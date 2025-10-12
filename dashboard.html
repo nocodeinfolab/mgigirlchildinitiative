@@ -982,6 +982,135 @@
         .video-card.expanded .video-player video {
             border-radius: 15px !important;
         }
+        /* Search Bar Styles */
+        .search-section {
+            margin-bottom: 2rem;
+        }
+        
+        .search-container {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            max-width: 600px;
+        }
+        
+        .search-input {
+            flex: 1;
+            padding: 1rem;
+            border: 2px solid var(--light-pink);
+            border-radius: 10px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        
+        .search-input:focus {
+            border-color: var(--primary);
+        }
+        
+        .search-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s;
+            min-height: 44px;
+        }
+        
+        .search-btn:hover {
+            background: var(--secondary);
+        }
+        
+        .search-results {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            display: none;
+        }
+        
+        .search-results.active {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+        
+        .search-results-header {
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+            color: var(--secondary);
+            display: flex;
+            justify-content: between;
+            align-items: center;
+        }
+        
+        .clear-search {
+            background: var(--light-pink);
+            color: var(--primary);
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        
+        .search-results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1rem;
+        }
+        
+        .search-result-item {
+            background: var(--light-pink);
+            padding: 1rem;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-left: 4px solid var(--primary);
+            min-height: 44px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .search-result-item:hover {
+            transform: translateX(5px);
+            background: var(--light-purple);
+        }
+        
+        .search-result-content {
+            flex: 1;
+        }
+        
+        .search-result-title {
+            font-weight: bold;
+            margin-bottom: 0.3rem;
+            color: var(--text-dark);
+        }
+        
+        .search-result-type {
+            font-size: 0.8rem;
+            color: var(--text-light);
+        }
+        
+        .search-result-tag {
+            background: var(--primary);
+            color: white;
+            padding: 0.3rem 0.8rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-left: 1rem;
+        }
+        
+        .no-results {
+            text-align: center;
+            color: var(--text-light);
+            padding: 2rem;
+            grid-column: 1 / -1;
+        }
 
 
     </style>
@@ -1023,6 +1152,22 @@
 
     <!-- Main Container -->
     <div class="container">
+        <!-- Search Section -->
+        <div class="search-section">
+            <div class="search-container">
+                <input type="text" class="search-input" id="searchInput" placeholder="search resources here..." />
+                <button class="search-btn" id="searchBtn">🔍 Search</button>
+            </div>
+            <div class="search-results" id="searchResults">
+                <div class="search-results-header">
+                    <span>Search Results</span>
+                    <button class="clear-search" id="clearSearch">Clear</button>
+                </div>
+                <div class="search-results-grid" id="searchResultsGrid">
+                    <!-- Search results will appear here -->
+                </div>
+            </div>
+        </div>
         <!-- Home Tab -->
         <div class="tab-content active" id="home">
             <!-- Welcome Section -->
@@ -2919,6 +3064,214 @@
                 const body = document.getElementById('lessonModalBody');
                 if (body) body.innerHTML = '';
             }
+        }
+        // Search functionality
+        const searchInput = document.getElementById('searchInput');
+        const searchBtn = document.getElementById('searchBtn');
+        const searchResults = document.getElementById('searchResults');
+        const searchResultsGrid = document.getElementById('searchResultsGrid');
+        const clearSearch = document.getElementById('clearSearch');
+        
+        // Handle search button click
+        searchBtn.addEventListener('click', performSearch);
+        
+        // Handle Enter key in search input
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                performSearch();
+            }
+        });
+        
+        // Handle clear search
+        clearSearch.addEventListener('click', () => {
+            searchInput.value = '';
+            searchResults.classList.remove('active');
+            searchResultsGrid.innerHTML = '';
+        });
+        
+        async function performSearch() {
+            const query = searchInput.value.trim();
+            
+            if (!query) {
+                alert('Please enter a search term');
+                return;
+            }
+        
+            // Show loading state
+            searchResultsGrid.innerHTML = '<div class="loading">Searching...</div>';
+            searchResults.classList.add('active');
+        
+            try {
+                const response = await fetch(`https://mgi-login-worker.stevechikeabia.workers.dev/search?q=${encodeURIComponent(query)}`);
+                
+                if (!response.ok) throw new Error('Search failed');
+                
+                const data = await response.json();
+                displaySearchResults(data);
+                
+            } catch (error) {
+                console.error('Search error:', error);
+                searchResultsGrid.innerHTML = '<div class="no-results">Failed to load search results. Please try again.</div>';
+            }
+        }
+        
+        function displaySearchResults(data) {
+            const { results, counts } = data;
+            
+            searchResultsGrid.innerHTML = '';
+        
+            if (counts.total === 0) {
+                searchResultsGrid.innerHTML = '<div class="no-results">No results found. Try different keywords.</div>';
+                return;
+            }
+        
+            // Display resources results
+            results.resources.forEach(resource => {
+                const resultItem = createSearchResultItem(
+                    resource.topic || 'Untitled Resource',
+                    resource.resourceType || 'Resource',
+                    resource.resourceType || 'Resource',
+                    resource,
+                    'resource'
+                );
+                searchResultsGrid.appendChild(resultItem);
+            });
+        
+            // Display courses results
+            results.courses.forEach(course => {
+                const resultItem = createSearchResultItem(
+                    course['Course Name'] || 'Untitled Course',
+                    'Course',
+                    'Course',
+                    course,
+                    'course'
+                );
+                searchResultsGrid.appendChild(resultItem);
+            });
+        }
+        
+        function createSearchResultItem(title, type, tag, data, resultType) {
+            const item = document.createElement('div');
+            item.className = 'search-result-item';
+            item.dataset.resultType = resultType;
+            item.dataset.resultData = JSON.stringify(data);
+        
+            item.innerHTML = `
+                <div class="search-result-content">
+                    <div class="search-result-title">${title}</div>
+                    <div class="search-result-type">${type}</div>
+                </div>
+                <span class="search-result-tag">${tag}</span>
+            `;
+        
+            item.addEventListener('click', () => {
+                handleSearchResultClick(data, resultType);
+            });
+        
+            return item;
+        }
+        
+        function handleSearchResultClick(data, resultType) {
+            if (resultType === 'resource') {
+                handleResourceResultClick(data);
+            } else if (resultType === 'course') {
+                handleCourseResultClick(data);
+            }
+        }
+        
+        function handleResourceResultClick(resource) {
+            const resourceType = resource.resourceType?.toLowerCase() || 'book';
+            const resourceId = resource.resourceId || resource.id;
+            const fileUrl = Array.isArray(resource.file) && resource.file.length > 0 ? resource.file[0].url : '';
+            const title = resource.topic || 'Untitled';
+        
+            switch(resourceType) {
+                case 'video':
+                    switchToTab('videos');
+                    setTimeout(() => {
+                        const videoCard = findAndLoadVideo(resourceId, fileUrl, title);
+                        if (videoCard) {
+                            videoCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                    }, 300);
+                    break;
+        
+                case 'audio':
+                    switchToTab('audio');
+                    setTimeout(() => {
+                        const audioCard = findAndLoadAudio(resourceId, fileUrl);
+                        if (audioCard) {
+                            audioCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                    }, 300);
+                    break;
+        
+                case 'book':
+                    switchToTab('books');
+                    setTimeout(() => {
+                        openBookReaderWithFallback(title, fileUrl, resourceId);
+                    }, 300);
+                    break;
+        
+                default:
+                    // For unknown types, try to open as book
+                    switchToTab('books');
+                    setTimeout(() => {
+                        openBookReaderWithFallback(title, fileUrl, resourceId);
+                    }, 300);
+            }
+        }
+        
+        function handleCourseResultClick(course) {
+            const courseId = course['Course ID'] || course.id;
+            
+            switchToTab('courses');
+            
+            setTimeout(() => {
+                // Find the course card and scroll to it
+                const courseCard = document.querySelector(`.course-card[data-resource-id="${courseId}"]`);
+                if (courseCard) {
+                    courseCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    
+                    // Add highlight effect
+                    courseCard.style.transition = 'all 0.5s ease';
+                    courseCard.style.boxShadow = '0 0 0 3px var(--primary), 0 10px 25px rgba(0, 0, 0, 0.15)';
+                    
+                    setTimeout(() => {
+                        courseCard.style.boxShadow = 'var(--shadow)';
+                    }, 2000);
+                } else {
+                    // If course not found, it might be on another page
+                    console.log('Course not found on current page, would need to load appropriate page');
+                }
+            }, 300);
+        }
+        
+        // Helper functions to find and load specific resources
+        function findAndLoadVideo(resourceId, fileUrl, title) {
+            let videoCard = document.querySelector(`.video-card[data-resource-id="${resourceId}"]`);
+            
+            if (videoCard) {
+                // Trigger video load
+                const thumbnail = videoCard.querySelector('.video-thumbnail');
+                if (thumbnail) thumbnail.click();
+            } else {
+                // Create a temporary video card if not found
+                console.log('Video not found in current view, would need to search through paginated results');
+            }
+            
+            return videoCard;
+        }
+        
+        function findAndLoadAudio(resourceId, fileUrl) {
+            const audioCard = document.querySelector(`.audio-card[data-resource-id="${resourceId}"]`);
+            
+            if (audioCard) {
+                const playBtn = audioCard.querySelector('.play-pause-btn');
+                if (playBtn) playBtn.click();
+            }
+            
+            return audioCard;
         }
         // Tab Navigation
         const tabs = document.querySelectorAll('.nav-tab');
