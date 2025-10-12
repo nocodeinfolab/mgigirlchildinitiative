@@ -1112,57 +1112,47 @@
             grid-column: 1 / -1;
         }
         /* Enhanced Lesson Modal Styles */
-        
-        .lesson-navigation-bottom {
+        .lesson-navigation {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin: 15px 0;
-            padding: 10px;
+            margin-bottom: 20px;
+            padding: 15px;
             background: var(--light-pink);
-            border-radius: 8px;
-            gap: 10px;
+            border-radius: 10px;
         }
 
-        .lesson-nav-btn-small {
+        .lesson-nav-btn {
             background: var(--primary);
             color: white;
             border: none;
-            padding: 6px 12px;
+            padding: 10px 15px;
             border-radius: 5px;
             cursor: pointer;
             font-weight: bold;
-            font-size: 0.8rem;
-            min-height: 36px;
-            flex-shrink: 0;
+            min-height: 44px;
         }
 
-        .lesson-nav-btn-small:hover {
-            background: var(--secondary);
-        }
-
-        .lesson-nav-btn-small:disabled {
+        .lesson-nav-btn:disabled {
             background: #ccc;
             cursor: not-allowed;
         }
 
-        .lesson-progress-small {
+        .lesson-progress {
             display: flex;
             align-items: center;
-            gap: 3px;
+            gap: 5px;
             font-weight: bold;
             color: var(--text-dark);
-            font-size: 0.9rem;
-            flex-shrink: 0;
         }
 
         #currentLessonNumber {
             color: var(--primary);
-            font-size: 1rem;
+            font-size: 1.2rem;
         }
 
         .lessons-list-container {
-            margin-top: 20px;
+            margin-top: 25px;
             border-top: 2px solid var(--light-purple);
             padding-top: 15px;
         }
@@ -1178,13 +1168,12 @@
         .lesson-list-item {
             display: flex;
             align-items: center;
-            padding: 8px;
-            margin-bottom: 4px;
+            padding: 10px;
+            margin-bottom: 5px;
             border-radius: 5px;
             cursor: pointer;
             transition: all 0.3s;
-            gap: 8px;
-            font-size: 0.9rem;
+            gap: 10px;
         }
 
         .lesson-list-item:hover {
@@ -1198,33 +1187,30 @@
 
         .lesson-number {
             font-weight: bold;
-            min-width: 20px;
+            min-width: 25px;
         }
 
         .lesson-name {
             flex: 1;
+            font-size: 0.9rem;
         }
 
         .current-badge {
             background: rgba(255,255,255,0.2);
-            padding: 2px 6px;
-            border-radius: 8px;
-            font-size: 0.65rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.7rem;
         }
 
         /* Responsive */
         @media (max-width: 768px) {
-            .lesson-navigation-bottom {
+            .lesson-navigation {
                 flex-direction: column;
-                gap: 8px;
+                gap: 10px;
             }
             
-            .lesson-nav-btn-small {
+            .lesson-nav-btn {
                 width: 100%;
-            }
-            
-            .lesson-progress-small {
-                order: -1; /* Put progress on top in mobile */
             }
         }
 
@@ -3074,17 +3060,16 @@
                             <button id="closeLessonModal">&times;</button>
                         </div>
                         <div class="lesson-modal-body">
-                            <div id="lessonContent"></div>
-                            <div class="lesson-navigation-bottom">
-                                <button id="prevLesson" class="lesson-nav-btn-small">← Previous</button>
-                                <div class="lesson-progress-small">
-                                    <span>Lesson </span>
+                            <div class="lesson-navigation">
+                                <button id="prevLesson" class="lesson-nav-btn">← Previous</button>
+                                <div class="lesson-progress">
                                     <span id="currentLessonNumber">${lessonIndex + 1}</span>
-                                    <span> of </span>
+                                    <span>of</span>
                                     <span id="totalLessons">${totalLessons}</span>
                                 </div>
-                                <button id="nextLesson" class="lesson-nav-btn-small">Next →</button>
+                                <button id="nextLesson" class="lesson-nav-btn">Next →</button>
                             </div>
+                            <div id="lessonContent"></div>
                             <div class="lessons-list-container">
                                 <h3 style="margin: 20px 0 10px 0; color: #333;">All Lessons</h3>
                                 <div id="lessonsList" class="lessons-list-compact"></div>
@@ -3137,7 +3122,6 @@
                 video.autoplay = true;
                 video.style.width = '100%';
                 video.style.borderRadius = '12px';
-                video.style.maxHeight = '70vh';
                 videoContainer.appendChild(video);
                 content.appendChild(videoContainer);
 
@@ -3212,6 +3196,121 @@
             loadLessonsList(courseId, lessonIndex);
 
             modal.style.display = 'flex';
+        }
+
+        // Load all lessons for the course
+        async function loadLessonsList(courseId, currentIndex) {
+            const lessonsList = document.getElementById('lessonsList');
+            lessonsList.innerHTML = '<div style="text-align: center; padding: 10px;">Loading lessons...</div>';
+
+            try {
+                // Try to find course in cache first
+                let courseData = courseCache.get(courseId);
+                
+                if (!courseData) {
+                    // If not in cache, search for the course
+                    const response = await fetch(`https://mgi-login-worker.stevechikeabia.workers.dev/get_courses`);
+                    const data = await response.json();
+                    
+                    courseData = data.courses?.find(course => course['Course ID'] === courseId);
+                    if (courseData) {
+                        courseCache.set(courseId, courseData);
+                    }
+                }
+
+                if (courseData) {
+                    const lessons = [];
+                    // Extract all lessons
+                    for (let i = 1; i <= 50; i++) {
+                        const lessonField = `Lesson ${i}`;
+                        if (courseData[lessonField] && courseData[lessonField].fileName && courseData[lessonField].fileUrl) {
+                            lessons.push({
+                                index: i - 1,
+                                fileName: courseData[lessonField].fileName,
+                                fileUrl: courseData[lessonField].fileUrl
+                            });
+                        }
+                    }
+
+                    // Store lessons for navigation
+                    window.currentCourseData.lessons = lessons;
+                    window.currentCourseData.totalLessons = lessons.length;
+
+                    // Update the lessons list
+                    lessonsList.innerHTML = '';
+                    lessons.forEach((lesson, index) => {
+                        const lessonItem = document.createElement('div');
+                        lessonItem.className = `lesson-list-item ${index === currentIndex ? 'current-lesson' : ''}`;
+                        lessonItem.innerHTML = `
+                            <span class="lesson-number">${index + 1}.</span>
+                            <span class="lesson-name">${lesson.fileName}</span>
+                            ${index === currentIndex ? '<span class="current-badge">Now Playing</span>' : ''}
+                        `;
+                        
+                        lessonItem.addEventListener('click', () => {
+                            openLessonModal(
+                                window.currentCourseData.courseName,
+                                window.currentCourseData.courseId,
+                                lesson.fileName,
+                                lesson.fileUrl,
+                                index,
+                                lessons.length
+                            );
+                        });
+                        
+                        lessonsList.appendChild(lessonItem);
+                    });
+                } else {
+                    lessonsList.innerHTML = '<div style="text-align: center; padding: 10px; color: #666;">Unable to load lessons list</div>';
+                }
+            } catch (error) {
+                console.error('Error loading lessons list:', error);
+                lessonsList.innerHTML = '<div style="text-align: center; padding: 10px; color: #666;">Error loading lessons</div>';
+            }
+        }
+
+        // Navigation functions
+        function navigateToPreviousLesson() {
+            const { currentIndex, lessons, courseName, courseId } = window.currentCourseData;
+            if (currentIndex > 0) {
+                const prevLesson = lessons[currentIndex - 1];
+                openLessonModal(
+                    courseName,
+                    courseId,
+                    prevLesson.fileName,
+                    prevLesson.fileUrl,
+                    currentIndex - 1,
+                    lessons.length
+                );
+            }
+        }
+
+        function navigateToNextLesson() {
+            const { currentIndex, lessons, courseName, courseId } = window.currentCourseData;
+            if (currentIndex < lessons.length - 1) {
+                const nextLesson = lessons[currentIndex + 1];
+                openLessonModal(
+                    courseName,
+                    courseId,
+                    nextLesson.fileName,
+                    nextLesson.fileUrl,
+                    currentIndex + 1,
+                    lessons.length
+                );
+            }
+        }
+
+        function closeLessonModal() {
+            const modal = document.getElementById('lessonModal');
+            if (modal) {
+                modal.style.display = 'none';
+                // Clear any video/audio that might be playing
+                const video = modal.querySelector('video');
+                if (video) {
+                    video.pause();
+                    video.currentTime = 0;
+                }
+            }
         }
         // ===== SEARCH FUNCTIONALITY =====
         // ===== ENHANCED SEARCH FUNCTIONALITY =====
