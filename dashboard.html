@@ -4207,7 +4207,7 @@
             searchResults.classList.remove('active');
             searchResultsGrid.innerHTML = '';
         }        
-        // Crossword Puzzle Data - Teen & Gender Focused
+        
         const crosswordPuzzle = {
             grid: [
                 [1, 1, 1, 1, 0, 1, 1, 1, 1],
@@ -4221,57 +4221,53 @@
             ],
             clues: {
                 across: {
-                    1: { clue: "Respecting all gender identities", answer: "INCLUSIVE", row: 0, col: 0 },
-                    5: { clue: "Being true to yourself", answer: "AUTHENTIC", row: 2, col: 5 },
-                    6: { clue: "Standing up for what's right", answer: "ADVOCATE", row: 4, col: 2 },
-                    7: { clue: "Everyone deserves this", answer: "EQUITY", row: 6, col: 3 },
-                    8: { clue: "Social media platform for videos", answer: "TIKTOK", row: 0, col: 8 }
+                    1: { clue: "Accepting boys and girls equally", answer: "FAIR", row: 0, col: 0 },
+                    5: { clue: "Being real and honest", answer: "TRUE", row: 2, col: 5 },
+                    6: { clue: "Speak up for a friend", answer: "HELP", row: 4, col: 2 },
+                    7: { clue: "All people should get this", answer: "RIGHT", row: 6, col: 3 },
+                    8: { clue: "App for short videos", answer: "TIKTOK", row: 0, col: 8 }
                 },
                 down: {
-                    1: { clue: "How you express your gender", answer: "IDENTITY", row: 0, col: 0 },
-                    2: { clue: "Being fair to everyone", answer: "JUSTICE", row: 0, col: 2 },
-                    3: { clue: "Accepting people as they are", answer: "VALIDATE", row: 0, col: 4 },
-                    4: { clue: "Online harassment", answer: "CYBERBULLY", row: 0, col: 7 },
-                    5: { clue: "Mental health awareness", answer: "WELLNESS", row: 2, col: 5 }
+                    1: { clue: "Who you feel you are", answer: "SELF", row: 0, col: 0 },
+                    2: { clue: "Treating people equally", answer: "FAIR", row: 0, col: 2 },
+                    3: { clue: "Say kind words to others", answer: "CARE", row: 0, col: 4 },
+                    4: { clue: "Mean words online", answer: "HATE", row: 0, col: 7 },
+                    5: { clue: "Feeling calm and happy", answer: "PEACE", row: 2, col: 5 }
                 }
             },
             solutions: {
-                // ACROSS 1: INCLUSIVE
-                "0-0": "I", "0-1": "N", "0-2": "C", "0-3": "L", "0-4": "", "0-5": "U", "0-6": "S", "0-7": "I", "0-8": "V",
-                "1-0": "N", "1-1": "C", "1-2": "L", "1-3": "U", "1-4": "S", "1-5": "I", "1-6": "V", "1-7": "E", "1-8": "E",
+                // ACROSS 1: FAIR
+                "0-0": "F", "0-1": "A", "0-2": "I", "0-3": "R",
                 
-                // ACROSS 5: AUTHENTIC
-                "2-5": "A", "2-6": "", "2-7": "U", "2-8": "T",
-                "3-5": "U", "3-6": "T", "3-7": "H", "3-8": "E",
-                "4-5": "T", "4-6": "H", "4-7": "E", "4-8": "N",
-                "5-5": "I", "5-6": "E", "5-7": "N", "5-8": "T",
-                "6-5": "C", "6-6": "N", "6-7": "T", "6-8": "I",
+                // ACROSS 5: TRUE
+                "2-5": "T", "2-6": "R", "2-7": "U", "2-8": "E",
                 
-                // ACROSS 6: ADVOCATE
-                "4-2": "A", "4-3": "D", "4-4": "V", "4-5": "O", "4-6": "C", "4-7": "A", "4-8": "T",
+                // ACROSS 6: HELP
+                "4-2": "H", "4-3": "E", "4-4": "L", "4-5": "P",
                 
-                // ACROSS 7: EQUITY
-                "6-3": "E", "6-4": "Q", "6-5": "U", "6-6": "I", "6-7": "T", "6-8": "Y",
+                // ACROSS 7: RIGHT
+                "6-3": "R", "6-4": "I", "6-5": "G", "6-6": "H", "6-7": "T",
                 
                 // ACROSS 8: TIKTOK
                 "0-8": "T", "1-8": "I", "2-8": "K", "3-8": "T", "4-8": "O", "5-8": "K",
                 
-                // DOWN 1: IDENTITY
-                "0-0": "I", "1-0": "D", "2-0": "E", "3-0": "N", "4-0": "T", "5-0": "I", "6-0": "T", "7-0": "Y",
+                // DOWN 1: SELF
+                "0-0": "S", "1-0": "E", "2-0": "L", "3-0": "F",
                 
-                // DOWN 2: JUSTICE
-                "0-2": "J", "1-2": "U", "2-2": "S", "3-2": "T", "4-2": "I", "5-2": "C", "6-2": "E",
+                // DOWN 2: FAIR
+                "0-2": "F", "1-2": "A", "2-2": "I", "3-2": "R",
                 
-                // DOWN 3: VALIDATE
-                "0-4": "V", "1-4": "A", "2-4": "L", "3-4": "I", "4-4": "D", "5-4": "A", "6-4": "T", "7-4": "E",
+                // DOWN 3: CARE
+                "0-4": "C", "1-4": "A", "2-4": "R", "3-4": "E",
                 
-                // DOWN 4: CYBERBULLY
-                "0-7": "C", "1-7": "Y", "2-7": "B", "3-7": "E", "4-7": "R", "5-7": "B", "6-7": "U", "7-7": "L", "8-7": "Y",
+                // DOWN 4: HATE
+                "0-7": "H", "1-7": "A", "2-7": "T", "3-7": "E",
                 
-                // DOWN 5: WELLNESS
-                "2-5": "W", "3-5": "E", "4-5": "L", "5-5": "L", "6-5": "N", "7-5": "E", "8-5": "S", "9-5": "S"
+                // DOWN 5: PEACE
+                "2-5": "P", "3-5": "E", "4-5": "A", "5-5": "C", "6-5": "E"
             }
         };
+
 
         // Initialize Crossword Puzzle
         function initCrossword() {
